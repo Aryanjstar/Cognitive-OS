@@ -1,0 +1,42 @@
+# Cognitive OS — Cursor Rules
+
+## Architecture
+- Next.js 15 App Router with Server Components by default
+- Client components only when interactivity is needed ("use client")
+- All data fetching in server components, pass serialized props to client
+- API routes in src/app/api/ for external integrations
+- Prisma ORM for all database access via src/lib/prisma.ts singleton
+
+## Commit Messages
+- Keep commit messages SHORT: max 72 chars for the subject line
+- Format: "<type>: <what changed>" (e.g. "feat: add focus timer page")
+- Types: feat, fix, refactor, style, docs, test, chore
+- NO "Co-authored-by" lines — never add them
+- NO emoji in commit messages
+- Body is optional, only for non-obvious changes
+
+## Code Style
+- TypeScript strict mode, no `any` unless absolutely necessary
+- Use `interface` over `type` for object shapes
+- Prefer named exports over default exports (except pages)
+- Error handling: always use structured logging via src/lib/logger.ts
+- Use Zod for runtime validation of API inputs
+
+## UI/Design
+- Black, white, and grayscale only — no colors
+- shadcn/ui components with zinc palette
+- Geist font family (sans + mono)
+- Framer Motion for all animations
+- Mobile-first responsive design
+
+## Logging
+- Use pino logger from src/lib/logger.ts
+- Every API route must log request start + completion with duration
+- Every error must be logged with full stack trace and context
+- Agent runs logged with timing data
+
+## Caching
+- Redis preferred, in-memory Map fallback
+- Cache cognitive scores for 60s
+- Cache GitHub sync results for 300s
+- Invalidate on mutations
