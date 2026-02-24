@@ -20,7 +20,7 @@ const footerLinks = {
     { label: "Research Paper", href: "https://github.com/Aryanjstar/Cognitive-OS#cognitive-load-formula" },
   ],
   Company: [
-    { label: "About the Creator", href: "https://aryanjaiswal.in" },
+    { label: "Portfolio", href: "https://aryanjaiswal.in" },
     { label: "LinkedIn", href: "https://www.linkedin.com/in/aryanjstar/" },
     { label: "Contact Us", href: "mailto:aryanjstar3@gmail.com" },
     { label: "Privacy Policy", href: "/privacy" },
@@ -107,16 +107,7 @@ export function Footer() {
         <Separator className="my-10" />
         <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
           <p className="text-xs text-muted-foreground/60">
-            &copy; {new Date().getFullYear()} Cognitive OS. Built by{" "}
-            <a
-              href="https://aryanjaiswal.in"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline transition-colors hover:text-foreground"
-            >
-              Aryan Jaiswal
-            </a>
-            . All rights reserved.
+            &copy; {new Date().getFullYear()} Cognitive OS. All rights reserved.
           </p>
           <div className="flex gap-6">
             {socials.map((social) => (
