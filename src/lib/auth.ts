@@ -17,14 +17,13 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async session({ session, user }) {
-      if (session.user) {
-        session.user.id = user.id;
+    async jwt({ token, user, account }) {
+      if (user) {
+        token.id = user.id;
       }
-      return session;
-    },
-    async signIn({ account }) {
       if (account) {
+        token.accessToken = account.access_token;
+        // Persist GitHub access token to DB for API calls
         await prisma.account.updateMany({
           where: {
             provider: account.provider,
@@ -37,13 +36,20 @@ export const authOptions: NextAuthOptions = {
           },
         });
       }
-      return true;
+      return token;
+    },
+    async session({ session, token }) {
+      if (session.user && token) {
+        session.user.id = token.id as string;
+        (session as { accessToken?: string }).accessToken = token.accessToken as string;
+      }
+      return session;
     },
   },
   pages: {
     signIn: "/login",
   },
   session: {
-    strategy: "database",
+    strategy: "jwt",
   },
 };
