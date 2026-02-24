@@ -32,12 +32,12 @@ export function CTASection() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.7 }}
-            className="relative"
+            className="relative flex flex-col items-center justify-center"
           >
             <h2 className="text-3xl font-bold tracking-tight md:text-5xl">
               Start protecting your focus today
             </h2>
-            <p className="mt-5 max-w-lg text-background/60 md:text-lg">
+            <p className="mt-5 max-w-lg text-center text-background/60 md:text-lg">
               Join the private beta. Connect your GitHub in one click and get
               your first Cognitive Load Score in under 2 minutes.
             </p>

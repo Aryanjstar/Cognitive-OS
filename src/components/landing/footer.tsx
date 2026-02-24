@@ -8,10 +8,12 @@ import { Github, Linkedin, Twitter, Globe, Phone, Mail } from "lucide-react";
 
 const footerLinks = {
   Product: [
-    { label: "Features", href: "#features" },
-    { label: "How It Works", href: "#how-it-works" },
-    { label: "Pricing", href: "#pricing" },
+    { label: "Features", href: "/#features" },
+    { label: "How It Works", href: "/#how-it-works" },
+    { label: "Pricing", href: "/#pricing" },
     { label: "Dashboard", href: "/dashboard" },
+    { label: "Guide", href: "/#guide" },
+    { label: "Demo", href: "/demo" },
   ],
   Resources: [
     { label: "Documentation", href: "https://github.com/Aryanjstar/Cognitive-OS#readme" },
@@ -23,7 +25,6 @@ const footerLinks = {
     { label: "Portfolio", href: "https://aryanjaiswal.in" },
     { label: "LinkedIn", href: "https://www.linkedin.com/in/aryanjstar/" },
     { label: "Contact Us", href: "mailto:aryanjstar3@gmail.com" },
-    { label: "Privacy Policy", href: "/privacy" },
   ],
 };
 

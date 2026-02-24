@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Menu, X, ArrowRight } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { Menu, X, ArrowRight, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/shared/logo";
 import { marketingNav } from "@/config/navigation";
@@ -11,6 +12,8 @@ import { cn } from "@/lib/utils";
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const { data: session, status } = useSession();
+  const isAuthenticated = status === "authenticated" && !!session;
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -43,19 +46,34 @@ export function Navbar() {
         </div>
 
         <div className="hidden items-center gap-3 md:flex">
-          <Button variant="ghost" size="sm" asChild className="transition-all duration-300 hover:bg-foreground/5">
-            <Link href="/login">Sign In</Link>
-          </Button>
-          <Button
-            size="sm"
-            asChild
-            className="gap-1.5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
-          >
-            <Link href="/login">
-              Get Started
-              <ArrowRight size={13} />
-            </Link>
-          </Button>
+          {isAuthenticated ? (
+            <Button
+              size="sm"
+              asChild
+              className="gap-1.5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
+            >
+              <Link href="/dashboard">
+                <LayoutDashboard size={14} />
+                Dashboard
+              </Link>
+            </Button>
+          ) : (
+            <>
+              <Button variant="ghost" size="sm" asChild className="transition-all duration-300 hover:bg-foreground/5">
+                <Link href="/login">Sign In</Link>
+              </Button>
+              <Button
+                size="sm"
+                asChild
+                className="gap-1.5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
+              >
+                <Link href="/login">
+                  Get Started
+                  <ArrowRight size={13} />
+                </Link>
+              </Button>
+            </>
+          )}
         </div>
 
         <button
@@ -84,12 +102,21 @@ export function Navbar() {
               {item.title}
             </Link>
           ))}
-          <Button size="sm" asChild className="w-full gap-1.5">
-            <Link href="/login">
-              Get Started
-              <ArrowRight size={13} />
-            </Link>
-          </Button>
+          {isAuthenticated ? (
+            <Button size="sm" asChild className="w-full gap-1.5">
+              <Link href="/dashboard">
+                <LayoutDashboard size={14} />
+                Dashboard
+              </Link>
+            </Button>
+          ) : (
+            <Button size="sm" asChild className="w-full gap-1.5">
+              <Link href="/login">
+                Get Started
+                <ArrowRight size={13} />
+              </Link>
+            </Button>
+          )}
         </div>
       </div>
     </header>

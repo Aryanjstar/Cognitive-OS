@@ -58,4 +58,6 @@ export const marketingNav = [
   { title: "Features", href: "#features" },
   { title: "How It Works", href: "#how-it-works" },
   { title: "Pricing", href: "#pricing" },
+  { title: "Guide", href: "#guide" },
+  { title: "Demo", href: "/demo" },
 ];

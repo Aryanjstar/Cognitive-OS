@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import Link from "next/link";
 import { motion, useScroll, useTransform } from "framer-motion";
 import {
   Gauge,
@@ -9,6 +10,7 @@ import {
   ShieldAlert,
   CalendarClock,
   BarChart3,
+  ArrowUpRight,
 } from "lucide-react";
 
 const features = [
@@ -98,23 +100,33 @@ export function FeaturesSection() {
                 delay: i * 0.08,
                 ease: [0.25, 0.4, 0.25, 1],
               }}
-              className="group relative overflow-hidden rounded-2xl border border-border/80 p-7 transition-all duration-500 hover:border-foreground/15 hover:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.1)]"
             >
-              <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-foreground/[0.015] to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+              <Link
+                href="/#guide"
+                className="group relative block overflow-hidden rounded-2xl border border-border/80 p-7 transition-all duration-500 hover:border-foreground/15 hover:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.1)]"
+              >
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-foreground/[0.015] to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
 
-              <div className="relative">
-                <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl border border-foreground/10 bg-foreground/[0.04] transition-all duration-500 group-hover:bg-foreground group-hover:border-foreground">
-                  <feature.icon
-                    size={20}
-                    strokeWidth={1.5}
-                    className="text-foreground transition-colors duration-500 group-hover:text-background"
-                  />
+                <div className="relative">
+                  <div className="mb-5 flex items-center justify-between">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-foreground/10 bg-foreground/[0.04] transition-all duration-500 group-hover:bg-foreground group-hover:border-foreground">
+                      <feature.icon
+                        size={20}
+                        strokeWidth={1.5}
+                        className="text-foreground transition-colors duration-500 group-hover:text-background"
+                      />
+                    </div>
+                    <ArrowUpRight
+                      size={16}
+                      className="text-muted-foreground/0 transition-all duration-500 group-hover:text-muted-foreground group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+                    />
+                  </div>
+                  <h3 className="text-base font-semibold tracking-tight">{feature.title}</h3>
+                  <p className="mt-2.5 text-sm leading-relaxed text-muted-foreground">
+                    {feature.description}
+                  </p>
                 </div>
-                <h3 className="text-base font-semibold tracking-tight">{feature.title}</h3>
-                <p className="mt-2.5 text-sm leading-relaxed text-muted-foreground">
-                  {feature.description}
-                </p>
-              </div>
+              </Link>
             </motion.div>
           ))}
         </div>
