@@ -4,6 +4,16 @@ import { FocusClient } from "./focus-client";
 
 export const metadata = { title: "Focus" };
 
+interface SessionRecord {
+  id: string;
+  taskType: string;
+  startedAt: Date;
+  endedAt: Date | null;
+  duration: number;
+  interrupted: boolean;
+  interruptionCount: number;
+}
+
 export default async function FocusPage() {
   const user = await requireAuth();
 
@@ -15,7 +25,7 @@ export default async function FocusPage() {
 
   return (
     <FocusClient
-      sessions={sessions.map((s) => ({
+      sessions={sessions.map((s: SessionRecord) => ({
         id: s.id,
         taskType: s.taskType,
         startedAt: s.startedAt.toISOString(),

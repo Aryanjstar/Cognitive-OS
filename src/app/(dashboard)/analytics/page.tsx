@@ -32,24 +32,24 @@ export default async function AnalyticsPage() {
 
   return (
     <AnalyticsClient
-      snapshots={snapshots.map((s) => ({
+      snapshots={snapshots.map((s: { score: number; level: string; timestamp: Date; breakdown: unknown }) => ({
         score: s.score,
         level: s.level,
         timestamp: s.timestamp.toISOString(),
         breakdown: s.breakdown as Record<string, number>,
       }))}
-      dailyData={dailyData.map((d) => ({
+      dailyData={dailyData.map((d: { date: Date; totalFocusMinutes: number; contextSwitches: number; avgCognitiveLoad: number; deepWorkStreaks: number }) => ({
         date: d.date.toISOString(),
         totalFocusMinutes: d.totalFocusMinutes,
         contextSwitches: d.contextSwitches,
         avgCognitiveLoad: d.avgCognitiveLoad,
         deepWorkStreaks: d.deepWorkStreaks,
       }))}
-      focusSessions={focusSessions.map((s) => ({
+      focusSessions={focusSessions.map((s: { duration: number; startedAt: Date }) => ({
         duration: s.duration,
         startedAt: s.startedAt.toISOString(),
       }))}
-      switches={switches.map((s) => ({
+      switches={switches.map((s: { switchedAt: Date; estimatedCost: number }) => ({
         switchedAt: s.switchedAt.toISOString(),
         estimatedCost: s.estimatedCost,
       }))}

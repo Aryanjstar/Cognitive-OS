@@ -4,6 +4,32 @@ import { TasksClient } from "./tasks-client";
 
 export const metadata = { title: "Tasks" };
 
+interface IssueRecord {
+  id: string;
+  title: string;
+  number: number;
+  complexity: number;
+  priority: number;
+  state: string;
+  labels: unknown;
+  repoId: string;
+  createdAt: Date;
+  updatedAt: Date;
+  repository: { name: string; fullName: string };
+}
+
+interface PRRecord {
+  id: string;
+  title: string;
+  number: number;
+  complexity: number;
+  state: string;
+  repoId: string;
+  createdAt: Date;
+  updatedAt: Date;
+  repository: { name: string; fullName: string };
+}
+
 export default async function TasksPage() {
   const user = await requireAuth();
 
@@ -26,7 +52,7 @@ export default async function TasksPage() {
   ]);
 
   const tasks = [
-    ...issues.map((i) => ({
+    ...issues.map((i: IssueRecord) => ({
       id: i.id,
       type: "issue" as const,
       title: i.title,
@@ -41,7 +67,7 @@ export default async function TasksPage() {
       createdAt: i.createdAt.toISOString(),
       updatedAt: i.updatedAt.toISOString(),
     })),
-    ...pullRequests.map((pr) => ({
+    ...pullRequests.map((pr: PRRecord) => ({
       id: pr.id,
       type: "pr" as const,
       title: pr.title,
@@ -61,7 +87,7 @@ export default async function TasksPage() {
   return (
     <TasksClient
       tasks={tasks}
-      repos={repos.map((r) => ({ id: r.id, name: r.name }))}
+      repos={repos.map((r: { id: string; name: string }) => ({ id: r.id, name: r.name }))}
     />
   );
 }

@@ -4,6 +4,51 @@ import { DashboardClient } from "./dashboard-client";
 
 export const metadata = { title: "Dashboard" };
 
+interface SnapshotSelect {
+  score: number;
+  timestamp: Date;
+}
+
+interface IssueWithRepo {
+  id: string;
+  title: string;
+  number: number;
+  complexity: number;
+  state: string;
+  repository: { name: string };
+}
+
+interface PRWithRepo {
+  id: string;
+  title: string;
+  number: number;
+  complexity: number;
+  state: string;
+  repository: { name: string };
+}
+
+interface SwitchRecord {
+  id: string;
+  fromTaskType: string | null;
+  toTaskType: string | null;
+  switchedAt: Date;
+  estimatedCost: number;
+}
+
+interface FocusRecord {
+  duration: number;
+}
+
+interface RecommendationRecord {
+  id: string;
+  agent: string;
+  type: string;
+  message: string;
+  priority: string;
+  estimatedCostMinutes: number | null;
+  dismissed: boolean;
+}
+
 export default async function DashboardPage() {
   const user = await requireAuth();
 
@@ -74,7 +119,7 @@ export default async function DashboardPage() {
   ]);
 
   const tasks = [
-    ...openIssues.map((i) => ({
+    ...openIssues.map((i: IssueWithRepo) => ({
       id: i.id,
       type: "issue" as const,
       title: i.title,
@@ -83,7 +128,7 @@ export default async function DashboardPage() {
       complexity: i.complexity,
       state: i.state,
     })),
-    ...openPRs.map((pr) => ({
+    ...openPRs.map((pr: PRWithRepo) => ({
       id: pr.id,
       type: "pr" as const,
       title: pr.title,
@@ -94,7 +139,7 @@ export default async function DashboardPage() {
     })),
   ].sort((a, b) => b.complexity - a.complexity);
 
-  const switches = todaySwitches.map((s) => ({
+  const switches = todaySwitches.map((s: SwitchRecord) => ({
     id: s.id,
     fromTask: s.fromTaskType,
     toTask: s.toTaskType,
@@ -103,7 +148,7 @@ export default async function DashboardPage() {
   }));
 
   const totalFocusMinutes = todayFocus.reduce(
-    (sum, s) => sum + Math.floor(s.duration / 60),
+    (sum: number, s: FocusRecord) => sum + Math.floor(s.duration / 60),
     0
   );
 
@@ -121,7 +166,7 @@ export default async function DashboardPage() {
           staleness: number;
         } | undefined,
       }}
-      history={recentSnapshots.map((s) => ({
+      history={recentSnapshots.map((s: SnapshotSelect) => ({
         score: s.score,
         timestamp: s.timestamp.toISOString(),
       }))}
@@ -133,7 +178,7 @@ export default async function DashboardPage() {
         deepWorkStreak: dailyAnalytics?.deepWorkStreaks ?? 0,
         tasksCompleted: dailyAnalytics?.tasksCompleted ?? 0,
       }}
-      recommendations={recommendations.map((r) => ({
+      recommendations={recommendations.map((r: RecommendationRecord) => ({
         id: r.id,
         agent: r.agent,
         type: r.type,

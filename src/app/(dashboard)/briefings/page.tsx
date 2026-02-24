@@ -4,6 +4,30 @@ import { BriefingsClient } from "./briefings-client";
 
 export const metadata = { title: "Briefings" };
 
+interface BriefingRecord {
+  id: string;
+  taskId: string;
+  taskType: string;
+  title: string;
+  content: string;
+  sections: unknown;
+  generatedAt: Date;
+}
+
+interface IssueRef {
+  id: string;
+  title: string;
+  number: number;
+  repository: { name: string };
+}
+
+interface PRRef {
+  id: string;
+  title: string;
+  number: number;
+  repository: { name: string };
+}
+
 export default async function BriefingsPage() {
   const user = await requireAuth();
 
@@ -28,14 +52,14 @@ export default async function BriefingsPage() {
   ]);
 
   const tasks = [
-    ...openIssues.map((i) => ({
+    ...openIssues.map((i: IssueRef) => ({
       id: i.id,
       type: "issue" as const,
       title: i.title,
       number: i.number,
       repo: i.repository.name,
     })),
-    ...openPRs.map((pr) => ({
+    ...openPRs.map((pr: PRRef) => ({
       id: pr.id,
       type: "pr" as const,
       title: pr.title,
@@ -46,7 +70,7 @@ export default async function BriefingsPage() {
 
   return (
     <BriefingsClient
-      briefings={briefings.map((b) => ({
+      briefings={briefings.map((b: BriefingRecord) => ({
         id: b.id,
         taskId: b.taskId,
         taskType: b.taskType,
