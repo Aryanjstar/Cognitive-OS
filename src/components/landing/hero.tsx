@@ -98,14 +98,22 @@ export function Hero() {
             </Button>
           </motion.div>
 
-          <motion.p
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.6 }}
-            className="mt-5 text-xs text-muted-foreground/50"
+            className="mt-5 flex flex-col items-center gap-2"
           >
-            Free tier available. No credit card required.
-          </motion.p>
+            <p className="text-xs text-muted-foreground/50">
+              Free tier available. No credit card required.
+            </p>
+            <Link
+              href="/demo"
+              className="text-xs font-medium text-foreground/40 underline decoration-foreground/20 underline-offset-4 transition-colors duration-300 hover:text-foreground hover:decoration-foreground/40"
+            >
+              Or explore demo dashboards first
+            </Link>
+          </motion.div>
         </motion.div>
 
         <motion.div
