@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getGitHubToken } from "@/lib/auth-helpers";
 import { fullSync } from "@/lib/github";
+import { calculateCognitiveLoad } from "@/lib/cognitive-engine";
+import { generatePostSyncData } from "@/lib/post-sync";
 import { createChildLogger, logError } from "@/lib/logger";
 import { cacheInvalidate } from "@/lib/redis";
 
@@ -31,14 +33,20 @@ export async function POST() {
 
     const result = await fullSync(userId, token);
 
+    log.info({ userId }, "Generating cognitive analytics");
+    await generatePostSyncData(userId);
+    const cogScore = await calculateCognitiveLoad(userId);
+    log.info({ userId, cogScore: cogScore.score }, "Cognitive score calculated");
+
     await cacheInvalidate(`cognitive:${userId}*`);
 
     const duration = Date.now() - start;
-    log.info({ userId, ...result, durationMs: duration }, "GitHub sync completed");
+    log.info({ userId, ...result, cognitiveScore: cogScore.score, durationMs: duration }, "GitHub sync completed");
 
     return NextResponse.json({
       success: true,
       ...result,
+      cognitiveScore: cogScore.score,
       syncedAt: new Date().toISOString(),
     });
   } catch (error) {
