@@ -60,6 +60,7 @@ export async function runOrchestrator(
   // --- Focus Agent ---
   if (trigger === "periodic" || trigger === "manual") {
     const focusResult = await runFocusAgent(cognitiveScore, {
+      userId,
       openTaskCount: openIssueCount + openPRCount,
       todaySwitches: todaySwitchCount,
       hoursSinceBreak,
@@ -120,6 +121,7 @@ export async function runOrchestrator(
 
     if (tasksForPlanning.length > 0) {
       const planResult = await runPlanningAgent(tasksForPlanning, {
+        userId,
         currentHour: now.getHours(),
         cognitiveScore: cognitiveScore.score,
         focusMinutesToday,
@@ -149,6 +151,7 @@ export async function runOrchestrator(
       : 0;
 
     const guardResult = await runInterruptGuard({
+      userId,
       currentTaskTitle: currentTask?.taskType ?? "general work",
       currentTaskComplexity: 5,
       focusDepthMinutes: focusDepth,
