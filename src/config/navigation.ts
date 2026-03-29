@@ -57,7 +57,7 @@ export const dashboardNav: NavItem[] = [
 export const marketingNav = [
   { title: "Features", href: "/#features" },
   { title: "How It Works", href: "/#how-it-works" },
-  { title: "Live Analytics", href: "/analytics-live" },
+  { title: "Research Tracker", href: "/analytics-live" },
   { title: "Research", href: "/research" },
   { title: "Demo", href: "/demo" },
 ];

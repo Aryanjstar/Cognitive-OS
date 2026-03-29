@@ -166,15 +166,15 @@ export function LiveAnalyticsClient({ summary: initialSummary, trackedCount, act
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-foreground/40">
-              Real-Time Tracking
+              Research Dataset
             </p>
             <h1 className="mt-2 text-3xl font-bold tracking-tight md:text-4xl">
-              Live Developer Analytics
+              Research Tracker
             </h1>
             <p className="mt-2 text-muted-foreground">
               {trackedCount > 0
                 ? `Tracking ${trackedCount} developers · ${activeCount} with data · Auto-refreshes every 6 hours`
-                : "Click 'Discover Developers' to start tracking 50+ active GitHub developers"}
+                : "Click 'Discover' to build the research dataset from active GitHub developers"}
             </p>
           </div>
           <div className="flex gap-3">
