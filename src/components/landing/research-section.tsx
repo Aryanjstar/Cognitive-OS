@@ -72,7 +72,7 @@ export function ResearchSection() {
         >
           <Button variant="outline" asChild className="gap-2">
             <Link href="/analytics-live">
-              Live Analytics Dashboard
+              Open Research Tracker
               <ArrowRight size={14} />
             </Link>
           </Button>

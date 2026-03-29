@@ -5,8 +5,8 @@ import { getTrackerSummary } from "@/lib/github-tracker";
 import { LiveAnalyticsClient } from "./live-analytics-client";
 
 export const metadata = {
-  title: "Live Developer Analytics — Cognitive OS",
-  description: "Real-time GitHub activity tracking and cognitive load analysis for 50+ active developers.",
+  title: "Research Tracker — Cognitive OS",
+  description: "Real-time GitHub activity tracking and research metrics for active developers.",
 };
 
 export default async function LiveAnalyticsPage() {
