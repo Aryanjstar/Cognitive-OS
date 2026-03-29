@@ -3,27 +3,7 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
-import { ArrowRight, GitFork, CircleDot, GitPullRequest } from "lucide-react";
-
-async function getAllDemoUsers(): Promise<UserWithCounts[]> {
-  const users = await prisma.user.findMany({
-    select: { id: true, name: true, image: true, email: true },
-    orderBy: { createdAt: "asc" },
-  });
-
-  const usersWithCounts = await Promise.all(
-    users.map(async (user) => {
-      const [repos, issues, prs] = await Promise.all([
-        prisma.repository.count({ where: { userId: user.id } }),
-        prisma.issue.count({ where: { userId: user.id } }),
-        prisma.pullRequest.count({ where: { userId: user.id } }),
-      ]);
-      return { ...user, repos, issues, prs };
-    })
-  );
-
-  return usersWithCounts;
-}
+import { ArrowRight, Star, CircleDot, GitPullRequest, Brain } from "lucide-react";
 
 interface UserWithCounts {
   id: string;
@@ -31,8 +11,47 @@ interface UserWithCounts {
   image: string | null;
   email: string | null;
   repos: number;
+  totalStars: number;
   issues: number;
   prs: number;
+  avgLoad: number;
+}
+
+async function getAllDemoUsers(): Promise<UserWithCounts[]> {
+  const users = await prisma.user.findMany({
+    select: {
+      id: true, name: true, image: true, email: true,
+      repositories: { select: { starCount: true } },
+    },
+    orderBy: { createdAt: "asc" },
+  });
+
+  const usersWithCounts = await Promise.all(
+    users.map(async (user) => {
+      const [issues, prs, latestSnapshot] = await Promise.all([
+        prisma.issue.count({ where: { userId: user.id } }),
+        prisma.pullRequest.count({ where: { userId: user.id } }),
+        prisma.cognitiveSnapshot.findFirst({
+          where: { userId: user.id },
+          orderBy: { timestamp: "desc" },
+          select: { score: true },
+        }),
+      ]);
+      return {
+        id: user.id,
+        name: user.name,
+        image: user.image,
+        email: user.email,
+        repos: user.repositories.length,
+        totalStars: user.repositories.reduce((s, r) => s + r.starCount, 0),
+        issues,
+        prs,
+        avgLoad: latestSnapshot ? Math.round(latestSnapshot.score) : 0,
+      };
+    })
+  );
+
+  return usersWithCounts;
 }
 
 const getDemoUsers = getAllDemoUsers;
@@ -62,7 +81,7 @@ export default async function DemoPage() {
             href={`/demo/${user.id}`}
             className="group relative overflow-hidden rounded-2xl border border-border/80 p-6 transition-all duration-300 hover:border-foreground/15 hover:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.1)]"
           >
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-foreground/[0.015] to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+            <div className="pointer-events-none absolute inset-0 bg-linear-to-br from-foreground/1.5 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
 
             <div className="relative">
               <div className="flex items-center gap-3.5">
@@ -85,10 +104,10 @@ export default async function DemoPage() {
                 </div>
               </div>
 
-              <div className="mt-5 flex items-center gap-4 text-xs text-muted-foreground">
+              <div className="mt-5 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1.5">
-                  <GitFork size={12} />
-                  {user.repos} repos
+                  <Star size={12} />
+                  {user.totalStars.toLocaleString()} stars
                 </span>
                 <span className="flex items-center gap-1.5">
                   <CircleDot size={12} />
@@ -97,6 +116,10 @@ export default async function DemoPage() {
                 <span className="flex items-center gap-1.5">
                   <GitPullRequest size={12} />
                   {user.prs} PRs
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Brain size={12} />
+                  Load: {user.avgLoad}
                 </span>
               </div>
 

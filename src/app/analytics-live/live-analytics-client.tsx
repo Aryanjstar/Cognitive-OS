@@ -30,17 +30,32 @@ export function LiveAnalyticsClient({ summary: initialSummary, trackedCount, act
   const [period, setPeriod] = useState<PeriodKey>("month");
   const [emailPreview, setEmailPreview] = useState<{ subject: string; body: string } | null>(null);
 
+  const [error, setError] = useState<string | null>(null);
+
   const handleDiscover = useCallback(async () => {
     setDiscovering(true);
+    setError(null);
     try {
-      await fetch("/api/tracker/discover", { method: "POST" });
-      const res = await fetch("/api/tracker/refresh", { method: "POST" });
-      const data = await res.json();
-      if (data.success) {
+      const discoverRes = await fetch("/api/tracker/discover", { method: "POST" });
+      const discoverData = await discoverRes.json();
+      if (!discoverRes.ok) {
+        setError(discoverData.error ?? "Discovery failed");
+        return;
+      }
+      const refreshRes = await fetch("/api/tracker/refresh", { method: "POST" });
+      const refreshData = await refreshRes.json();
+      if (refreshRes.ok && refreshData.success) {
         const summaryRes = await fetch("/api/tracker/summary");
         const summaryData = await summaryRes.json();
         if (!summaryData.error) setSummary(summaryData);
+      } else {
+        const summaryRes = await fetch("/api/tracker/summary");
+        const summaryData = await summaryRes.json();
+        if (!summaryData.error) setSummary(summaryData);
+        else setError("Developers discovered but refresh timed out. Click Refresh to retry.");
       }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Network error — check your connection");
     } finally {
       setDiscovering(false);
     }
@@ -48,11 +63,19 @@ export function LiveAnalyticsClient({ summary: initialSummary, trackedCount, act
 
   const handleRefresh = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
-      await fetch("/api/tracker/refresh", { method: "POST" });
+      const refreshRes = await fetch("/api/tracker/refresh", { method: "POST" });
+      if (!refreshRes.ok) {
+        const d = await refreshRes.json();
+        setError(d.error ?? "Refresh failed");
+      }
       const res = await fetch("/api/tracker/summary");
       const data = await res.json();
       if (!data.error) setSummary(data);
+      else setError(data.error);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Network error");
     } finally {
       setLoading(false);
     }
@@ -125,20 +148,28 @@ export function LiveAnalyticsClient({ summary: initialSummary, trackedCount, act
             </p>
           </div>
           <div className="flex gap-3">
-            {trackedCount === 0 ? (
-              <Button onClick={handleDiscover} disabled={discovering} className="gap-2">
-                {discovering ? <Loader2 size={14} className="animate-spin" /> : <Users size={14} />}
-                {discovering ? "Discovering..." : "Discover Developers"}
-              </Button>
-            ) : (
-              <Button onClick={handleRefresh} disabled={loading} variant="outline" className="gap-2">
-                {loading ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
-                {loading ? "Refreshing..." : "Refresh Data"}
-              </Button>
-            )}
+            <Button onClick={handleDiscover} disabled={discovering || loading} variant={sorted.length > 0 ? "outline" : "default"} className="gap-2">
+              {discovering ? <Loader2 size={14} className="animate-spin" /> : <Users size={14} />}
+              {discovering ? "Discovering..." : "Discover"}
+            </Button>
+            <Button onClick={handleRefresh} disabled={loading || discovering} variant="outline" className="gap-2">
+              {loading ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+              {loading ? "Refreshing..." : "Refresh"}
+            </Button>
           </div>
         </div>
       </motion.div>
+
+      {/* Error Display */}
+      {error && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-6 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3"
+        >
+          <p className="text-sm text-destructive">{error}</p>
+        </motion.div>
+      )}
 
       {/* Stats Cards */}
       {summary && (
@@ -289,7 +320,7 @@ export function LiveAnalyticsClient({ summary: initialSummary, trackedCount, act
       )}
 
       {/* Empty State */}
-      {!summary && trackedCount === 0 && (
+      {(!summary || sorted.length === 0) && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

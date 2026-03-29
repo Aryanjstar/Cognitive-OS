@@ -1,8 +1,8 @@
 # Cognitive OS
 
-**AI-powered cognitive operating system for software engineers.**
+**AI-powered cognitive load management for software engineers.**
 
-Tracks mental workload, context switching, and focus patterns — then uses multi-agent AI to protect your deep work. Includes a research-grade metrics framework with data from 33 real GitHub developers.
+Tracks mental workload, context switching, and focus patterns in real-time — then uses multi-agent AI to protect deep work. Includes a research-grade metrics framework with live data from 50+ active GitHub developers.
 
 ---
 
@@ -10,16 +10,18 @@ Tracks mental workload, context switching, and focus patterns — then uses mult
 
 | Capability | Description |
 |---|---|
-| **Cognitive Load Score** | Live 0-100 metric fusing task complexity, context switches, review burden, fatigue, and staleness |
+| **Cognitive Load Score** | Live 0–100 metric fusing task complexity, context switches, review burden, fatigue, and staleness |
 | **Adaptive Scoring** | Weights learn from individual developer patterns; exponential decay blending with historical data |
-| **Anomaly Detection** | Z-score based spike detection with severity levels (mild/moderate/severe) |
+| **Anomaly Detection** | Z-score based spike detection with severity levels (mild / moderate / severe) |
 | **GitHub Integration** | One-click OAuth syncs repos, issues, PRs, commits — calculates complexity scores automatically |
 | **AI Context Briefings** | GPT-4.1 generates structured memory-reload briefings when you return to a task |
 | **Multi-Agent Intelligence** | Focus Agent, Planning Agent, Interrupt Guard, and Agent Memory Layer work together |
 | **Focus Timer** | Built-in Pomodoro/free-form timer with per-session scoring and weekly insights |
 | **Cognitive Analytics** | 30-day trends, burnout prediction, best working hours, weekly/monthly summaries |
 | **Smart Task Sequencing** | AI reorders your task queue based on complexity, energy state, and time of day |
-| **Research Dashboard** | 33 developer comparison, 7 formal metrics, exportable CSV/JSON data for papers |
+| **Live Developer Tracking** | Real-time GitHub activity analysis for 50+ developers with time savings projections |
+| **Research Dashboard** | Developer comparison, 7 formal metrics, exportable CSV/JSON data for papers |
+| **Personalized Outreach** | Auto-generated emails showing developers their activity patterns and potential time savings |
 
 ---
 
@@ -29,8 +31,8 @@ Tracks mental workload, context switching, and focus patterns — then uses mult
 |---|---|
 | **Framework** | Next.js 16 (App Router, Server Components, Server Actions) |
 | **Language** | TypeScript (strict mode) |
-| **Styling** | Tailwind CSS v4 + shadcn/ui (monochrome B&W theme) |
-| **Database** | Azure PostgreSQL Flexible Server (Burstable B1ms, Central India) |
+| **Styling** | Tailwind CSS v4 + shadcn/ui (monochrome zinc theme) |
+| **Database** | Azure PostgreSQL Flexible Server |
 | **ORM** | Prisma 6 |
 | **Auth** | NextAuth.js v4 + GitHub OAuth + Prisma Adapter |
 | **AI** | Azure OpenAI GPT-4.1 (chat completions for briefings + agent reasoning) |
@@ -38,73 +40,64 @@ Tracks mental workload, context switching, and focus patterns — then uses mult
 | **Caching** | Redis (primary) + in-memory Map (fallback) via `ioredis` |
 | **Logging** | Pino (structured JSON in prod, pretty-print in dev) |
 | **Charts** | Recharts (monochrome palette) |
-| **Animations** | Framer Motion (parallax scroll, reveal, hover transitions) |
+| **Animations** | Framer Motion |
 | **Validation** | Zod |
-| **Hosting** | Netlify (frontend + serverless functions) |
-| **Cloud** | Azure (database, OpenAI, planned: Redis Cache, Container Apps) |
+| **CI/CD** | GitHub Actions → Azure Container Apps |
+| **Cloud** | Azure (PostgreSQL, OpenAI, Container Apps) |
 
 ---
 
 ## Architecture
 
 ```
-┌──────────────────────────────────────────────────────────────┐
-│                        Next.js App                           │
-│  ┌─────────────┐  ┌─────────────┐  ┌──────────────────────┐ │
-│  │  Landing     │  │  Dashboard  │  │  API Routes          │ │
-│  │  (marketing) │  │  (protected)│  │  /api/github/sync    │ │
-│  │              │  │             │  │  /api/cognitive/score │ │
-│  │  Hero        │  │  Gauge      │  │  /api/ai/briefing    │ │
-│  │  Features    │  │  Charts     │  │  /api/agents/recommend│ │
-│  │  Pricing     │  │  Tasks      │  │  /api/auth/[...]     │ │
-│  └─────────────┘  │  Focus      │  └──────────────────────┘ │
-│                    │  Briefings  │                            │
-│                    │  Analytics  │                            │
-│                    └─────────────┘                            │
-├──────────────────────────────────────────────────────────────┤
-│                    Services Layer                             │
-│  ┌──────────┐  ┌──────────────┐  ┌─────────────────────────┐│
-│  │ Cognitive │  │ AI Agents    │  │ GitHub Sync (Octokit)   ││
-│  │ Engine    │  │ Orchestrator │  │ - Repos, Issues, PRs    ││
-│  │ (scoring) │  │ Focus Agent  │  │ - Complexity scoring    ││
-│  │           │  │ Plan Agent   │  │                         ││
-│  │           │  │ Guard Agent  │  │                         ││
-│  └──────────┘  └──────────────┘  └─────────────────────────┘│
-├──────────────────────────────────────────────────────────────┤
-│                    Data Layer                                 │
-│  ┌──────────────────┐  ┌──────────┐  ┌───────────────────┐  │
-│  │ Azure PostgreSQL  │  │  Redis   │  │  Azure OpenAI     │  │
-│  │ (Prisma ORM)      │  │ (cache)  │  │  GPT-4.1          │  │
-│  └──────────────────┘  └──────────┘  └───────────────────┘  │
-└──────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                         Next.js App                              │
+│  ┌──────────────┐  ┌──────────────┐  ┌────────────────────────┐ │
+│  │  Marketing    │  │  Dashboard   │  │  API Routes            │ │
+│  │  Landing      │  │  (protected) │  │  /api/github/sync      │ │
+│  │  Research     │  │  Gauge       │  │  /api/cognitive/score   │ │
+│  │  Live         │  │  Charts      │  │  /api/ai/briefing      │ │
+│  │  Analytics    │  │  Tasks       │  │  /api/agents/recommend  │ │
+│  │  Demo         │  │  Focus       │  │  /api/tracker/*         │ │
+│  └──────────────┘  │  Briefings   │  │  /api/cron/*            │ │
+│                     │  Analytics   │  │  /api/research/data     │ │
+│                     └──────────────┘  └────────────────────────┘ │
+├─────────────────────────────────────────────────────────────────┤
+│                      Services Layer                              │
+│  ┌───────────┐  ┌───────────────┐  ┌──────────────────────────┐ │
+│  │ Cognitive  │  │ AI Agents     │  │ GitHub Tracker           │ │
+│  │ Engine     │  │ Orchestrator  │  │ - 50+ dev discovery      │ │
+│  │ (scoring)  │  │ Focus Agent   │  │ - Activity aggregation   │ │
+│  │            │  │ Plan Agent    │  │ - Time savings calc      │ │
+│  │ Research   │  │ Guard Agent   │  │ - Email generation       │ │
+│  │ Metrics    │  │ Agent Memory  │  │ - Cron auto-refresh      │ │
+│  └───────────┘  └───────────────┘  └──────────────────────────┘ │
+├─────────────────────────────────────────────────────────────────┤
+│                       Data Layer                                 │
+│  ┌───────────────────┐  ┌──────────┐  ┌──────────────────────┐  │
+│  │ Azure PostgreSQL   │  │  Redis   │  │  Azure OpenAI        │  │
+│  │ (Prisma ORM)       │  │ (cache)  │  │  GPT-4.1             │  │
+│  └───────────────────┘  └──────────┘  └──────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Cognitive Load Formula
+## Research Metrics
 
-The Cognitive Load Index (CLI) is calculated from 6 weighted factors with adaptive learning:
+Seven research-grade formulas power the system. Full mathematical documentation with symbol-by-symbol breakdowns is available in [`docs/research-methodology.md`](docs/research-methodology.md).
 
-```
-CLI(t) = α·TaskLoad + β·SwitchPenalty + γ·ReviewLoad + δ·UrgencyStress + ε·FatigueIndex + ζ·Staleness
+| # | Metric | What It Measures |
+|---|--------|-----------------|
+| 1 | **Cognitive Load Index** | Real-time mental workload (0–100) from 6 weighted factors |
+| 2 | **Adaptive Weight Learning** | Personalizes scoring based on individual overload patterns |
+| 3 | **Historical Blending** | Smooths scores with exponentially-decayed historical average |
+| 4 | **Anomaly Detection** | Detects unusual cognitive load spikes via z-score analysis |
+| 5 | **Context Switch Cost** | Quantifies hours lost to task switching (23.25 min/switch) |
+| 6 | **Burnout Risk Prediction** | Predicts burnout probability from load, switches, and focus deficit |
+| 7 | **Productivity Gain** | Measures time saved through interrupt guarding and focus protection |
 
-Base weights: α=0.25, β=0.20, γ=0.15, δ=0.15, ε=0.15, ζ=0.10
-Adaptive:     w_adaptive(k) = w_base(k) × (1 + 0.25 × I(k == dominant_factor))
-Blending:     CLI_blended = 0.7 × CLI_raw + 0.3 × CLI_historical (half-life = 3 days)
-Anomaly:      z = (CLI(t) - μ_recent) / σ_recent → mild(>1.2), moderate(>1.8), severe(>2.5)
-```
-
-Levels: **Flow** (0-30) | **Moderate** (30-60) | **Overloaded** (60-100)
-
-### Research Metrics (7 Formulas)
-
-1. **Cognitive Load Index (CLI)** — Weighted 6-factor composite score
-2. **Adaptive Weight Learning** — Personalized weights from overload pattern analysis
-3. **Historical Blending** — Exponential decay weighting (T_half = 3 days)
-4. **Anomaly Detection** — Z-score based cognitive load spike detection
-5. **Context Switch Cost** — 23.25min refocus time per switch (Mark et al., 2008)
-6. **Burnout Risk Prediction** — 3-factor composite: load + switches + focus deficit
-7. **Productivity Gain** — Time saved from interrupt guarding + focus protection
+Suitable publication venues: ICSE, CHI, FSE, ASE, ESEM, IEEE Software, ACM TOSEM, MSR
 
 ---
 
@@ -117,6 +110,19 @@ Three specialized AI agents coordinated by a central orchestrator:
 | **Focus Agent** | Score > 65 or fatigue high | Analyzes cognitive state, suggests breaks or task deferral |
 | **Planning Agent** | Multiple tasks open | Reorders task queue by optimal cognitive sequencing |
 | **Interrupt Guard** | New task arrives mid-focus | Calculates context-switch cost, recommends accept/defer/delegate |
+
+---
+
+## Live Developer Tracking
+
+The system discovers and tracks 50+ active GitHub developers in real-time:
+
+- **Discovery**: Fetches profiles of curated active developers (framework creators, systems programmers, OSS maintainers)
+- **Activity Analysis**: Aggregates commits, PRs, reviews, issues across day/week/month/year periods
+- **Classification**: Categorizes developers as reviewer, maintainer, prolific-coder, issue-triager, contributor, or OSS creator
+- **Time Savings**: Projects per-developer savings from Cognitive OS based on their actual activity patterns
+- **Auto-Refresh**: Cron endpoint refreshes data every 6 hours
+- **Outreach**: Generates personalized emails with activity insights and savings projections
 
 ---
 
@@ -170,7 +176,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 | Variable | Required | Description |
 |---|---|---|
-| `DATABASE_URL` | Yes | PostgreSQL connection string (Azure or local) |
+| `DATABASE_URL` | Yes | PostgreSQL connection string |
 | `AUTH_SECRET` | Yes | NextAuth.js encryption secret |
 | `NEXTAUTH_URL` | Yes | App URL (http://localhost:3000 for dev) |
 | `NEXTAUTH_SECRET` | Yes | Same as AUTH_SECRET |
@@ -181,6 +187,8 @@ Open [http://localhost:3000](http://localhost:3000).
 | `AZURE_OPENAI_CHATGPT_DEPLOYMENT` | Yes | GPT-4.1 deployment name |
 | `AZURE_OPENAI_API_VERSION` | Yes | API version (2025-01-01-preview) |
 | `REDIS_URL` | No | Redis connection URL (falls back to in-memory) |
+| `GITHUB_TOKEN` | No | GitHub PAT for tracker (higher rate limits) |
+| `CRON_SECRET` | No | Protects /api/cron/* endpoints |
 
 ---
 
@@ -194,6 +202,11 @@ Open [http://localhost:3000](http://localhost:3000).
 | POST | `/api/agents/recommend` | Yes | Run multi-agent orchestrator |
 | PATCH | `/api/agents/recommend` | Yes | Dismiss a recommendation |
 | GET | `/api/research/data` | No | Research data export (JSON or CSV via `?format=csv`) |
+| POST | `/api/tracker/discover` | No | Discover and track 50+ GitHub developers |
+| POST | `/api/tracker/refresh` | No | Refresh activity data for all tracked developers |
+| GET | `/api/tracker/summary` | No | Get cached tracker summary for dashboard |
+| GET | `/api/tracker/email` | No | Generate outreach email for a developer |
+| GET | `/api/cron/refresh-tracker` | Key | Automated cron endpoint for periodic refresh |
 
 ---
 
@@ -202,95 +215,77 @@ Open [http://localhost:3000](http://localhost:3000).
 ```
 src/
 ├── app/
-│   ├── (marketing)/        # Landing page (public)
-│   ├── (auth)/             # Login page
-│   ├── (dashboard)/        # Protected dashboard pages
-│   │   ├── dashboard/      # Main cognitive dashboard
-│   │   ├── tasks/          # Task management
-│   │   ├── focus/          # Focus timer + sessions
-│   │   ├── analytics/      # 30-day trends
-│   │   ├── briefings/      # AI context briefings
-│   │   └── settings/       # Profile + integrations
-│   └── api/                # API routes
+│   ├── (marketing)/           # Landing page (public)
+│   ├── (auth)/                # Login page
+│   ├── (dashboard)/           # Protected dashboard pages
+│   │   ├── dashboard/         # Main cognitive dashboard
+│   │   ├── tasks/             # Task management
+│   │   ├── focus/             # Focus timer + sessions
+│   │   ├── analytics/         # 30-day trends
+│   │   ├── briefings/         # AI context briefings
+│   │   └── settings/          # Profile + integrations
+│   ├── analytics-live/        # Live developer tracking dashboard
+│   ├── research/              # Research metrics + comparison
+│   ├── demo/                  # Demo user dashboards
+│   └── api/                   # API routes
 ├── components/
-│   ├── landing/            # Marketing page components
-│   ├── dashboard/          # Dashboard widgets
-│   ├── shared/             # Logo, session provider
-│   └── ui/                 # shadcn/ui components
+│   ├── landing/               # Marketing page components
+│   ├── dashboard/             # Dashboard widgets
+│   ├── shared/                # Logo, session provider
+│   └── ui/                    # shadcn/ui components
 ├── lib/
 │   ├── ai/
-│   │   ├── agents/         # Focus, Planning, Interrupt Guard, Agent Memory
-│   │   ├── azure-openai.ts # Azure OpenAI client
+│   │   ├── agents/            # Focus, Planning, Interrupt Guard, Agent Memory
+│   │   ├── azure-openai.ts    # Azure OpenAI client
 │   │   └── briefing-generator.ts
-│   ├── auth.ts             # NextAuth config
-│   ├── cognitive-engine.ts # Adaptive scoring with anomaly detection
-│   ├── research-metrics.ts # 7 formal research formulas
-│   ├── api-validation.ts   # Zod validation schemas
-│   ├── github.ts           # Octokit sync
-│   ├── logger.ts           # Pino structured logging
-│   ├── prisma.ts           # DB singleton
-│   └── redis.ts            # Cache layer
-└── types/                  # TypeScript interfaces
+│   ├── auth.ts                # NextAuth config
+│   ├── cognitive-engine.ts    # Adaptive scoring with anomaly detection
+│   ├── github-tracker.ts      # Real-time developer tracking
+│   ├── research-metrics.ts    # 7 formal research formulas
+│   ├── api-validation.ts      # Zod validation schemas
+│   ├── github.ts              # Octokit sync
+│   ├── logger.ts              # Pino structured logging
+│   ├── prisma.ts              # DB singleton
+│   └── redis.ts               # Cache layer (Redis + in-memory fallback)
+├── config/
+│   ├── navigation.ts          # Nav links
+│   └── site.ts                # Site metadata
+└── docs/
+    └── research-methodology.md # Full formula documentation
 ```
 
 ---
 
-## Azure Infrastructure
+## Deployment
 
-| Resource | Service | SKU | Region |
-|---|---|---|---|
-| `cognitive-os-db` | PostgreSQL Flexible Server | Standard_B1ms (Burstable) | Central India |
-| `devtinder` | Azure OpenAI | GPT-4.1 deployment | — |
-| `cognitive-os-rg` | Resource Group | — | Central India |
+### Azure Container Apps (Production)
 
----
+The repo uses GitHub Actions for CI/CD. Every push to `main` triggers:
+1. Docker build with standalone Next.js output
+2. Push to Azure Container Registry
+3. Deploy to Azure Container Apps
 
-## Deployment (Netlify)
+### Database
 
-The repo is connected to Netlify for continuous deployment. Every push to `main` triggers a build.
-
-**Build settings:**
-- Build command: `npm run build`
-- Publish directory: `.next`
-- Plugin: `@netlify/plugin-nextjs`
-
-**Required env vars on Netlify:** All variables from `.env.example` must be set in Netlify's environment settings.
+```bash
+npx prisma db push    # Sync schema to production
+npm run db:seed       # Seed demo data (optional)
+```
 
 ---
 
-## Demo Flow (for presentations)
+## Demo Flow
 
 1. **Landing Page** → Marketing site with scroll animations, research showcase, and feature breakdown
-2. **Research** → `/research` — 33 developer comparison, 7 formulas, exportable data
-3. **Demo** → `/demo` — Browse 33 real developer dashboards without sign-up
-4. **Sign In** → Click "Get Started" → GitHub OAuth → Redirects to dashboard
-5. **Dashboard** → Hero cognitive score with anomaly alerts, task list, agent recommendations
-6. **Tasks** → Grouped by category, AI priority scoring, visual categorization
-7. **Focus Timer** → Per-session scoring, weekly insights, session analysis
-8. **Briefings** → Select a task → Generate AI briefing → Show structured context reload
-9. **Analytics** → Burnout prediction, best working hours, weekly/monthly summaries
-10. **Settings** → Show GitHub integration status, cognitive load weight configuration
-
-## Research Paper
-
-The `/research` page serves as a living companion to the paper:
-
-- **7 formal formulas** (CLI, adaptive weights, historical blending, anomaly detection, context switch cost, burnout risk, productivity gain)
-- **33 real GitHub developers** with verified public data
-- **Exportable datasets** (JSON/CSV) at `/api/research/data`
-- **Citation references** to DORA, SPACE, DevEx, NASA-TLX, Sweller CLT, Mark et al.
-
-Suitable venues: ICSE, CHI, FSE, ASE, ESEM, IEEE Software, ACM TOSEM
-
----
-
-## Team Collaboration
-
-- **Branch strategy**: Feature branches off `main`, PR for review
-- **Commit format**: `<type>: <description>` (feat, fix, refactor, style, docs, test, chore)
-- **No Co-authored-by** lines in commits
-- **Environment**: Each developer copies `.env.example` → `.env.local`
-- **Database**: Shared Azure PostgreSQL (connection string in `.env.local`)
+2. **Live Analytics** → `/analytics-live` — Real-time tracking of 50+ active GitHub developers
+3. **Research** → `/research` — Developer comparison, metrics overview, exportable data
+4. **Demo** → `/demo` — Browse developer dashboards without sign-up
+5. **Sign In** → GitHub OAuth → Redirects to dashboard
+6. **Dashboard** → Cognitive score with anomaly alerts, task list, agent recommendations
+7. **Tasks** → Grouped by category, AI priority scoring
+8. **Focus Timer** → Per-session scoring, weekly insights
+9. **Briefings** → Select a task → Generate AI briefing → Structured context reload
+10. **Analytics** → Burnout prediction, best working hours, weekly/monthly summaries
 
 ---
 

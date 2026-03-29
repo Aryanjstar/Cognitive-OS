@@ -19,9 +19,13 @@ import {
 
 const log = createChildLogger("github-tracker");
 
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN ?? process.env.GITHUB_CLIENT_SECRET ?? "";
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN ?? "";
 
 function getOctokit() {
+  if (!GITHUB_TOKEN) {
+    log.warn("GITHUB_TOKEN not set — API calls will be rate-limited to 60/hour");
+    return new Octokit();
+  }
   return new Octokit({ auth: GITHUB_TOKEN });
 }
 
@@ -300,13 +304,19 @@ const SEED_DEVELOPERS = [
   "ljharb", "sokra", "sebmarkbage", "acdlite", "gnoff",
 ];
 
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export async function discoverAndTrackDevelopers(): Promise<{ tracked: number; errors: string[] }> {
   const octokit = getOctokit();
   const errors: string[] = [];
   let tracked = 0;
+  const delayMs = GITHUB_TOKEN ? 200 : 1200;
 
   for (const login of SEED_DEVELOPERS) {
     try {
+      if (tracked > 0) await delay(delayMs);
       const { profile } = await fetchDeveloperActivity(octokit, login);
 
       await prisma.trackedDeveloper.upsert({
@@ -380,8 +390,12 @@ export async function refreshAllActivity(): Promise<{
   const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   const yearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
 
-  for (const dev of developers) {
+  const refreshDelay = GITHUB_TOKEN ? 200 : 1200;
+
+  for (let idx = 0; idx < developers.length; idx++) {
+    const dev = developers[idx];
     try {
+      if (idx > 0) await delay(refreshDelay);
       const { profile, events } = await fetchDeveloperActivity(octokit, dev.githubLogin);
 
       const dayRaw = aggregateEvents(events, dayAgo, now);

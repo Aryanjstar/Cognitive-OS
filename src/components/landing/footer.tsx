@@ -4,7 +4,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { Logo } from "@/components/shared/logo";
 import { Separator } from "@/components/ui/separator";
-import { Github, Linkedin, Twitter, Globe, Phone, Mail } from "lucide-react";
+import { Github, Linkedin, Twitter, Globe, Mail } from "lucide-react";
 
 const footerLinks = {
   Product: [
@@ -66,14 +66,7 @@ export function Footer() {
                 </a>
               ))}
             </div>
-            <div className="mt-5 space-y-2">
-              <a
-                href="tel:+919794771263"
-                className="flex items-center gap-2 text-xs text-muted-foreground transition-colors hover:text-foreground"
-              >
-                <Phone size={12} />
-                +91 97947 71263
-              </a>
+            <div className="mt-5">
               <a
                 href="mailto:aryanjstar3@gmail.com"
                 className="flex items-center gap-2 text-xs text-muted-foreground transition-colors hover:text-foreground"
