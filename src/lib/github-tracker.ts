@@ -304,54 +304,68 @@ const SEED_DEVELOPERS = [
   "ljharb", "sokra", "sebmarkbage", "acdlite", "gnoff",
 ];
 
-function delay(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+async function processBatch<T, R>(
+  items: T[],
+  batchSize: number,
+  fn: (item: T) => Promise<R>
+): Promise<PromiseSettledResult<R>[]> {
+  const results: PromiseSettledResult<R>[] = [];
+  for (let i = 0; i < items.length; i += batchSize) {
+    const batch = items.slice(i, i + batchSize);
+    const batchResults = await Promise.allSettled(batch.map(fn));
+    results.push(...batchResults);
+  }
+  return results;
 }
 
 export async function discoverAndTrackDevelopers(): Promise<{ tracked: number; errors: string[] }> {
   const octokit = getOctokit();
   const errors: string[] = [];
   let tracked = 0;
-  const delayMs = GITHUB_TOKEN ? 200 : 1200;
+  const batchSize = GITHUB_TOKEN ? 10 : 3;
 
-  for (const login of SEED_DEVELOPERS) {
-    try {
-      if (tracked > 0) await delay(delayMs);
-      const { profile } = await fetchDeveloperActivity(octokit, login);
+  const results = await processBatch(SEED_DEVELOPERS, batchSize, async (login) => {
+    const { profile } = await fetchDeveloperActivity(octokit, login);
+    await prisma.trackedDeveloper.upsert({
+      where: { githubId: profile.id },
+      update: {
+        name: profile.name,
+        email: profile.email,
+        avatarUrl: profile.avatar_url,
+        bio: profile.bio,
+        company: profile.company,
+        location: profile.location,
+        publicRepos: profile.public_repos,
+        followers: profile.followers,
+        following: profile.following,
+        isActive: true,
+      },
+      create: {
+        githubLogin: profile.login,
+        githubId: profile.id,
+        name: profile.name,
+        email: profile.email,
+        avatarUrl: profile.avatar_url,
+        bio: profile.bio,
+        company: profile.company,
+        location: profile.location,
+        publicRepos: profile.public_repos,
+        followers: profile.followers,
+        following: profile.following,
+        category: "contributor",
+        isActive: true,
+      },
+    });
+    return login;
+  });
 
-      await prisma.trackedDeveloper.upsert({
-        where: { githubId: profile.id },
-        update: {
-          name: profile.name,
-          email: profile.email,
-          avatarUrl: profile.avatar_url,
-          bio: profile.bio,
-          company: profile.company,
-          location: profile.location,
-          publicRepos: profile.public_repos,
-          followers: profile.followers,
-          following: profile.following,
-          isActive: true,
-        },
-        create: {
-          githubLogin: profile.login,
-          githubId: profile.id,
-          name: profile.name,
-          email: profile.email,
-          avatarUrl: profile.avatar_url,
-          bio: profile.bio,
-          company: profile.company,
-          location: profile.location,
-          publicRepos: profile.public_repos,
-          followers: profile.followers,
-          following: profile.following,
-          category: "contributor",
-          isActive: true,
-        },
-      });
+  for (let i = 0; i < results.length; i++) {
+    const r = results[i];
+    if (r.status === "fulfilled") {
       tracked++;
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
+    } else {
+      const login = SEED_DEVELOPERS[i];
+      const msg = r.reason instanceof Error ? r.reason.message : String(r.reason);
       errors.push(`${login}: ${msg}`);
       log.warn({ login, err: msg }, "Failed to track developer");
     }
@@ -390,14 +404,21 @@ export async function refreshAllActivity(): Promise<{
   const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   const yearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
 
-  const refreshDelay = GITHUB_TOKEN ? 200 : 1200;
+  const batchSize = GITHUB_TOKEN ? 10 : 3;
 
-  for (let idx = 0; idx < developers.length; idx++) {
-    const dev = developers[idx];
+  const fetched = await processBatch(developers, batchSize, async (dev) => {
+    const { profile, events } = await fetchDeveloperActivity(octokit, dev.githubLogin);
+    return { dev, profile, events };
+  });
+
+  for (const result of fetched) {
+    if (result.status === "rejected") {
+      const msg = result.reason instanceof Error ? result.reason.message : String(result.reason);
+      errors.push(msg);
+      continue;
+    }
+    const { dev, profile, events } = result.value;
     try {
-      if (idx > 0) await delay(refreshDelay);
-      const { profile, events } = await fetchDeveloperActivity(octokit, dev.githubLogin);
-
       const dayRaw = aggregateEvents(events, dayAgo, now);
       const weekRaw = aggregateEvents(events, weekAgo, now);
       const monthRaw = aggregateEvents(events, monthAgo, now);

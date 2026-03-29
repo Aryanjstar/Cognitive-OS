@@ -57,6 +57,28 @@ The CLI is the **primary composite metric** that quantifies a developer's real-t
 | `FatigueIndex` | Fatigue factor | Input (0–100) | Computed from: ratio of active days to total days (>85% triggers fatigue), consecutive working hours, and weekend work patterns. |
 | `Staleness` | Task staleness factor | Input (0–100) | Computed from: age of open issues, time since last activity on assigned tasks, and longest streak of inactivity on any task. |
 
+### Worked Example
+
+Consider a developer with the following factor scores at 2:30 PM on a Tuesday:
+
+| Factor | Raw Score | Weight | Weighted |
+|--------|-----------|--------|----------|
+| TaskLoad | 65 (12 open issues, 4 open PRs, 8 commits today) | α = 0.25 | 16.25 |
+| SwitchPenalty | 40 (3 repos, switched tasks 5 times today) | β = 0.20 | 8.00 |
+| ReviewLoad | 55 (3 PRs awaiting review, avg 400 lines each) | γ = 0.15 | 8.25 |
+| UrgencyStress | 30 (1 critical bug, no imminent deadlines) | δ = 0.15 | 4.50 |
+| FatigueIndex | 45 (working 6 hours straight, no break) | ε = 0.15 | 6.75 |
+| Staleness | 20 (most issues updated within 3 days) | ζ = 0.10 | 2.00 |
+| **CLI** | | | **45.75** |
+
+This developer is in the **Moderate** zone (30–60). The system would not trigger urgent alerts but would monitor for further increases.
+
+Now compare with a developer who has:
+- TaskLoad = 85, SwitchPenalty = 70, ReviewLoad = 60, UrgencyStress = 75, FatigueIndex = 50, Staleness = 40
+- CLI = 0.25×85 + 0.20×70 + 0.15×60 + 0.15×75 + 0.15×50 + 0.10×40 = 21.25 + 14 + 9 + 11.25 + 7.5 + 4 = **67.0**
+
+This developer is **Overloaded** (>60). The Focus Agent would recommend an immediate break.
+
 ### Theoretical Basis
 
 Adapted from **Sweller's Cognitive Load Theory** (1988), which distinguishes intrinsic, extraneous, and germane cognitive load, and the **NASA Task Load Index (NASA-TLX)** by Hart & Staveland (1988), which uses weighted multi-dimensional assessment of workload.
@@ -96,11 +118,37 @@ This formula **personalizes** the CLI weights for each individual developer. Ins
 | `0.25` | Boost factor | Constant | The dominant factor's weight is increased by 25%. This value was chosen to be significant enough to affect scoring but not so large as to dominate all other factors. |
 | `1` | Base multiplier | Constant | Ensures non-dominant factors retain their original weight (1 × w_base = w_base). |
 
-### Example
+### Worked Example
 
-If a developer's overloaded snapshots show that `SwitchPenalty` is consistently the highest factor:
-- `w_adaptive(SwitchPenalty) = 0.20 × (1 + 0.25 × 1) = 0.20 × 1.25 = 0.25`
-- All other weights remain unchanged.
+**Scenario:** Developer Alice has been overloaded (CLI > 60) in 8 out of her last 20 snapshots. During those 8 overloaded snapshots, her average factor breakdown was:
+
+| Factor | Avg During Overload |
+|--------|-------------------|
+| TaskLoad | 55 |
+| **SwitchPenalty** | **78** ← highest |
+| ReviewLoad | 42 |
+| UrgencyStress | 60 |
+| FatigueIndex | 35 |
+| Staleness | 25 |
+
+The **dominant_factor** is `SwitchPenalty` (78 is the highest average).
+
+Now the weights adapt:
+
+| Factor | Base Weight | Adapted Weight |
+|--------|------------|---------------|
+| TaskLoad (α) | 0.25 | 0.25 (unchanged) |
+| **SwitchPenalty (β)** | **0.20** | **0.20 × 1.25 = 0.25** |
+| ReviewLoad (γ) | 0.15 | 0.15 (unchanged) |
+| UrgencyStress (δ) | 0.15 | 0.15 (unchanged) |
+| FatigueIndex (ε) | 0.15 | 0.15 (unchanged) |
+| Staleness (ζ) | 0.10 | 0.10 (unchanged) |
+
+For Alice, context switching is now weighted equally with task load (0.25 each), because the system learned that switching is her primary overload trigger. This means her CLI will be more sensitive to context switches than a developer whose primary issue is review burden.
+
+**Compare with Developer Bob**, whose overloaded snapshots show ReviewLoad as the dominant factor:
+- His `γ` (ReviewLoad weight) would be boosted: `0.15 × 1.25 = 0.1875`
+- His CLI becomes more sensitive to code review burden
 
 ### Theoretical Basis
 
@@ -140,6 +188,26 @@ This formula **smooths out noise** in the cognitive load score by blending the c
 | `t - tᵢ` | Age of snapshot | Computed | How long ago (in milliseconds) the historical snapshot was taken. |
 | `T_half` | Half-life | Constant = **3 days** (259,200,000 ms) | The time it takes for a historical score's influence to decay to 50%. After 3 days, a score has half the weight it had when recorded. After 6 days, it has 25% weight. |
 | `0.5^(...)` | Exponential decay function | Function | The weight assigned to each historical score. Produces values between 0 and 1, decreasing as the snapshot ages. |
+
+### Worked Example
+
+**Scenario:** Current raw CLI = 70. Historical scores from the past week:
+
+| Days Ago | CLI Score | Decay Weight (0.5^(days/3)) | Weighted Score |
+|----------|-----------|---------------------------|----------------|
+| 0.5 | 55 | 0.89 | 48.95 |
+| 1 | 48 | 0.79 | 37.92 |
+| 2 | 62 | 0.63 | 39.06 |
+| 3 | 45 | 0.50 | 22.50 |
+| 4 | 50 | 0.40 | 20.00 |
+| 5 | 58 | 0.31 | 17.98 |
+| 6 | 42 | 0.25 | 10.50 |
+| **Totals** | | **3.77** | **196.91** |
+
+- CLI_historical = 196.91 / 3.77 = **52.2**
+- CLI_blended = 0.7 × 70 + 0.3 × 52.2 = 49.0 + 15.7 = **64.7**
+
+Notice how the blended score (64.7) is lower than the raw score (70) because the historical average pulls it down. This prevents a single stressful afternoon from making the score jump to 70 when the developer's typical load is around 50.
 
 ### Why 3-Day Half-Life?
 
@@ -187,6 +255,21 @@ This formula detects **sudden spikes** in cognitive load by comparing the curren
 | `μ_recent` | Recent mean | Computed | The arithmetic mean (average) of the most recent cognitive load scores. Computed from the last 10–20 snapshots. |
 | `σ_recent` | Recent standard deviation | Computed | The standard deviation of recent scores. Measures how much the scores typically vary. A small σ means scores are stable; a large σ means they fluctuate a lot. |
 
+### Worked Example
+
+**Scenario:** Developer Carol's last 10 CLI scores: 42, 38, 45, 40, 43, 41, 39, 44, 42, 40
+
+- μ_recent (mean) = (42+38+45+40+43+41+39+44+42+40) / 10 = **41.4**
+- σ_recent (standard deviation) = **2.07** (calculated from variance)
+
+Now Carol's current score spikes to **48**:
+- z = (48 - 41.4) / 2.07 = 6.6 / 2.07 = **3.19**
+- Severity: **Severe** (z > 2.5)
+
+The system alerts Carol that her cognitive load is abnormally high. Even though 48 is not an extreme absolute value, it's very unusual *for her* — she normally operates around 41.
+
+**Compare:** If Developer Dave normally scores between 30 and 70 (σ = 12.0, μ = 50), a score of 48 gives z = (48 - 50) / 12 = **-0.17** — completely normal for him. The same absolute score triggers different alerts for different developers.
+
 ### Why These Thresholds?
 
 - **1.2**: In a normal distribution, ~11.5% of values exceed this. It catches the top ~12% of unusual readings.
@@ -228,6 +311,26 @@ This formula quantifies the **hidden productivity cost** of context switching. E
 | `BaseCost` | Minimum switch cost | Constant = **8 minutes** | The minimum time lost even for a trivial context switch (e.g., checking Slack then returning to code). |
 | `TaskComplexity` | Complexity of current task | Input (1–10) | How complex the task being interrupted is. More complex tasks require more time to rebuild mental context. |
 | `2` | Complexity multiplier | Constant | Each unit of complexity adds 2 minutes to the switch cost. A complexity-5 task costs 8 + 5×2 = 18 minutes per switch. |
+
+### Worked Example
+
+**Scenario:** Developer Eve switches tasks 12 times per day on average. Her current task complexity is 6.
+
+**Step 1 — Per-switch cost:**
+- CostPerSwitch = 8 + 6 × 2 = **20 minutes** per switch
+
+**Step 2 — Daily lost time:**
+- Using the empirical average (23.25 min): 12 × 23.25 / 60 = **4.65 hours/day** lost to refocusing
+
+**Step 3 — Monthly lost time:**
+- LostFocusHours = 4.65 × 22 = **102.3 hours/month**
+
+**Step 4 — Monetary cost:**
+- MonthlyCost = 102.3 × $101 = **$10,332/month** lost per developer
+
+This means Eve loses more than half her working month (102 out of 176 available hours) to context switching alone. If Cognitive OS reduces her daily switches from 12 to 7:
+- New lost hours = (7 × 23.25 / 60) × 22 = 59.7 hours/month
+- **Savings: 42.6 hours/month = $4,303/month**
 
 ### Monetary Cost
 
@@ -278,6 +381,28 @@ This formula predicts the **probability of developer burnout** on a scale of 0 t
 | 0.6–0.8 | **High** | Active intervention: reduce task load, defer non-critical work. |
 | 0.8–1.0 | **Critical** | Immediate action: mandatory break, workload redistribution. |
 
+### Worked Example
+
+**Scenario:** Developer Frank over the past 7 days:
+- Average CLI = 72 (high sustained load)
+- Context switches trending upward: was 6/day last week, now 10/day → switchTrend = +4
+- Focus ratio = 0.35 (only 35% of his day is focused, uninterrupted work)
+
+**Calculation:**
+- norm(avgLoad_7d) = 72 / 100 = **0.72**
+- norm(switchTrend) = min(4 / 10, 1.0) = **0.40**
+- Focus deficit = 1 - 0.35 = **0.65**
+
+BurnoutRisk = 0.4 × 0.72 + 0.3 × 0.40 + 0.3 × 0.65
+           = 0.288 + 0.120 + 0.195
+           = **0.603** (60.3%)
+
+Frank is at **High** burnout risk. The system recommends reducing his task load and deferring non-critical code reviews.
+
+**Compare with Developer Grace:**
+- Average CLI = 35, switchTrend = -1 (improving), focusRatio = 0.70
+- BurnoutRisk = 0.4 × 0.35 + 0.3 × 0.0 + 0.3 × 0.30 = 0.14 + 0.0 + 0.09 = **0.23** (Low risk)
+
 ### Theoretical Basis
 
 Adapted from the **Maslach Burnout Inventory — General Survey (MBI-GS)** dimensions: emotional exhaustion (mapped to cognitive load), depersonalization (mapped to context switch fragmentation), and reduced personal accomplishment (mapped to focus deficit).
@@ -319,6 +444,37 @@ This formula quantifies the **concrete productivity improvement** a developer ga
 | `0.5` | Focus efficiency factor | Constant | Additional focus minutes are weighted at 50% because not all additional focus time translates directly to output (diminishing returns). |
 | `0.35` (35%) | Switch reduction rate | Constant | The projected reduction in context switches from Cognitive OS's Interrupt Guard. Based on the agent's ability to defer non-critical interruptions during flow states. |
 | `0.20` (20%) | Focus improvement rate | Constant | The projected improvement in focus time from Cognitive OS's Focus Agent. Based on the agent's ability to detect and extend deep work sessions. |
+
+### Worked Example
+
+**Scenario:** Developer Hank's baseline (without Cognitive OS):
+- Switches per day: 14
+- Focus time per day: 150 minutes (2.5 hours out of 8)
+- Productive hours (DPS_baseline): 3.2 hours/day
+
+**Step 1 — Reduced switches:**
+- ReducedSwitches = 14 × 0.65 = 9.1 → ~9 switches/day
+- InterruptionsAvoided = 14 - 9 = **5 per day**
+
+**Step 2 — Time saved from fewer switches:**
+- TimeSaved = 5 × 23.25 = **116.25 minutes/day** (1.94 hours)
+
+**Step 3 — Focus time improvement:**
+- ImprovedFocusMinutes = 150 × 1.20 = **180 minutes/day**
+- FocusGain = (180 - 150) × 0.5 = **15 minutes/day** (0.25 hours)
+
+**Step 4 — Total daily savings:**
+- TotalSavedPerDay = 116.25 + 15 = **131.25 minutes** (2.19 hours)
+
+**Step 5 — Productivity gain:**
+- DPS_with = 3.2 + 2.19 = 5.39 hours/day
+- ΔProductivity = (5.39 - 3.2) / 3.2 × 100% = **68.4% improvement**
+
+**Step 6 — Monthly monetary savings:**
+- Hours saved/month = 2.19 × 22 = 48.1 hours
+- MonthlySavings = 48.1 × $101 = **$4,858/month per developer**
+
+For a team of 10 developers, that's **$48,580/month** or **$582,960/year** in recovered productivity.
 
 ### Monetary Savings
 

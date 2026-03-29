@@ -388,7 +388,7 @@ function StatCard({
 }) {
   return (
     <div className="rounded-2xl border border-border/80 p-5">
-      <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-lg bg-foreground/[0.04]">
+      <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-lg bg-foreground/4">
         <Icon size={14} className="text-foreground/60" />
       </div>
       <p className="text-2xl font-bold tabular-nums tracking-tight">{value}</p>

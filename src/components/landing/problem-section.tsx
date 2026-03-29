@@ -44,7 +44,7 @@ export function ProblemSection() {
     <section ref={sectionRef} className="relative overflow-hidden border-t border-border">
       <motion.div
         style={{ y: bgY }}
-        className="pointer-events-none absolute right-0 top-0 -z-10 h-[500px] w-[500px] rounded-full bg-gradient-to-bl from-foreground/[0.02] to-transparent blur-3xl"
+        className="pointer-events-none absolute right-0 top-0 -z-10 h-[500px] w-[500px] rounded-full bg-gradient-to-bl from-foreground/2 to-transparent blur-3xl"
       />
 
       <div className="mx-auto max-w-6xl px-6 py-28 md:py-36">
@@ -81,7 +81,7 @@ export function ProblemSection() {
               }}
               className="group relative overflow-hidden rounded-2xl border border-border/80 bg-background p-8 transition-all duration-500 hover:border-foreground/20 hover:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.12)]"
             >
-              <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-foreground/[0.02] to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-foreground/2 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
 
               <div className="relative">
                 <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-xl bg-foreground transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3">

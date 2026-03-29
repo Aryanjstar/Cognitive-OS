@@ -21,10 +21,10 @@ export function Hero() {
   return (
     <section ref={containerRef} className="relative overflow-hidden">
       <div className="absolute inset-0 -z-10">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-[size:32px_32px]" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-size-[32px_32px]" />
         <motion.div
           style={{ y }}
-          className="absolute left-1/2 top-0 -z-10 h-[800px] w-[800px] -translate-x-1/2 rounded-full bg-gradient-to-b from-zinc-100 to-transparent blur-3xl"
+          className="absolute left-1/2 top-0 -z-10 h-[800px] w-[800px] -translate-x-1/2 rounded-full bg-linear-to-b from-zinc-100 to-transparent blur-3xl"
         />
       </div>
 
@@ -37,7 +37,7 @@ export function Hero() {
             initial={{ opacity: 0, y: 16, filter: "blur(8px)" }}
             animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
             transition={{ duration: 0.6 }}
-            className="mb-8 inline-flex items-center gap-2 rounded-full border border-foreground/10 bg-foreground/[0.03] px-4 py-1.5 text-xs font-medium tracking-wide text-muted-foreground backdrop-blur-sm"
+            className="mb-8 inline-flex items-center gap-2 rounded-full border border-foreground/10 bg-foreground/3 px-4 py-1.5 text-xs font-medium tracking-wide text-muted-foreground backdrop-blur-sm"
           >
             <span className="relative flex h-1.5 w-1.5">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-foreground/30" />
@@ -53,7 +53,7 @@ export function Hero() {
             className="max-w-4xl text-5xl font-bold leading-[1.05] tracking-tight md:text-7xl lg:text-8xl"
           >
             Infrastructure for{" "}
-            <span className="inline-block bg-gradient-to-r from-foreground via-foreground/70 to-foreground/40 bg-clip-text text-transparent">
+            <span className="inline-block bg-linear-to-r from-foreground via-foreground/70 to-foreground/40 bg-clip-text text-transparent">
               Developer Cognition
             </span>
           </motion.h1>
@@ -91,7 +91,7 @@ export function Hero() {
               asChild
               className="gap-2 px-8 transition-all duration-300 hover:-translate-y-0.5"
             >
-              <Link href="#how-it-works">
+              <Link href="/#how-it-works">
                 See How It Works
                 <ArrowRight size={16} />
               </Link>
@@ -160,7 +160,7 @@ export function Hero() {
                     {[30, 35, 28, 42, 55, 48, 38, 42, 35, 50, 45, 42, 38, 33, 40].map((v, i) => (
                       <motion.div
                         key={i}
-                        className="flex-1 rounded-t bg-gradient-to-t from-zinc-600 to-zinc-500"
+                        className="flex-1 rounded-t bg-linear-to-t from-zinc-600 to-zinc-500"
                         initial={{ height: 0 }}
                         animate={{ height: `${v}%` }}
                         transition={{ duration: 0.6, delay: 0.8 + i * 0.04, ease: "easeOut" }}
@@ -187,7 +187,7 @@ export function Hero() {
               </div>
             </div>
           </div>
-          <div className="pointer-events-none absolute -inset-8 -z-10 rounded-3xl bg-gradient-to-b from-foreground/[0.04] to-transparent blur-2xl" />
+          <div className="pointer-events-none absolute -inset-8 -z-10 rounded-3xl bg-linear-to-b from-foreground/4 to-transparent blur-2xl" />
         </motion.div>
       </div>
     </section>

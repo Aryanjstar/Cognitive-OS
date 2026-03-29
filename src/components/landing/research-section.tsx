@@ -101,7 +101,7 @@ function ResearchStat({
 }) {
   return (
     <div className="rounded-2xl border border-border/80 p-6 text-center">
-      <div className="mx-auto mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-foreground/[0.04]">
+      <div className="mx-auto mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-foreground/4">
         <Icon size={18} className="text-foreground/60" />
       </div>
       <p className="text-3xl font-bold tabular-nums tracking-tight">{value}</p>

@@ -65,7 +65,7 @@ export function FeaturesSection() {
     <section ref={sectionRef} id="features" className="relative overflow-hidden border-t border-border">
       <motion.div
         style={{ x: bgX }}
-        className="pointer-events-none absolute left-0 top-1/3 -z-10 h-[400px] w-[400px] rounded-full bg-gradient-to-r from-foreground/[0.03] to-transparent blur-3xl"
+        className="pointer-events-none absolute left-0 top-1/3 -z-10 h-[400px] w-[400px] rounded-full bg-gradient-to-r from-foreground/3 to-transparent blur-3xl"
       />
 
       <div className="mx-auto max-w-6xl px-6 py-28 md:py-36">
@@ -105,11 +105,11 @@ export function FeaturesSection() {
                 href="/#guide"
                 className="group relative block overflow-hidden rounded-2xl border border-border/80 p-7 transition-all duration-500 hover:border-foreground/15 hover:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.1)]"
               >
-                <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-foreground/[0.015] to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-foreground/1.5 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
 
                 <div className="relative">
                   <div className="mb-5 flex items-center justify-between">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-foreground/10 bg-foreground/[0.04] transition-all duration-500 group-hover:bg-foreground group-hover:border-foreground">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-foreground/10 bg-foreground/4 transition-all duration-500 group-hover:bg-foreground group-hover:border-foreground">
                       <feature.icon
                         size={20}
                         strokeWidth={1.5}

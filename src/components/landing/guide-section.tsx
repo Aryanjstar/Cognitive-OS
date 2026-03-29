@@ -194,7 +194,7 @@ export function GuideSection() {
     <section ref={sectionRef} id="guide" className="relative overflow-hidden border-t border-border">
       <motion.div
         style={{ y: bgY }}
-        className="pointer-events-none absolute right-0 top-1/4 -z-10 h-[500px] w-[500px] rounded-full bg-gradient-to-l from-foreground/[0.03] to-transparent blur-3xl"
+        className="pointer-events-none absolute right-0 top-1/4 -z-10 h-[500px] w-[500px] rounded-full bg-gradient-to-l from-foreground/3 to-transparent blur-3xl"
       />
 
       <div className="mx-auto max-w-6xl px-6 py-28 md:py-36">
@@ -255,7 +255,7 @@ export function GuideSection() {
             <div className="grid gap-8 lg:grid-cols-5">
               <div className="lg:col-span-2">
                 <div className="sticky top-24">
-                  <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl border border-foreground/10 bg-foreground/[0.04]">
+                  <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl border border-foreground/10 bg-foreground/4">
                     <active.icon size={22} strokeWidth={1.5} className="text-foreground" />
                   </div>
                   <h3 className="text-2xl font-bold tracking-tight">{active.title}</h3>
@@ -282,7 +282,7 @@ export function GuideSection() {
                           transition={{ duration: 0.3, delay: i * 0.06 }}
                           className="flex items-center gap-3 rounded-xl border border-border/60 px-4 py-3 transition-colors duration-300 hover:border-foreground/15"
                         >
-                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-foreground/[0.04]">
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-foreground/4">
                             <MetricIcon size={14} strokeWidth={1.5} className="text-foreground/60" />
                           </div>
                           <span className="text-sm font-medium">{metric}</span>

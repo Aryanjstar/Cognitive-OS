@@ -31,55 +31,85 @@ export function LiveAnalyticsClient({ summary: initialSummary, trackedCount, act
   const [emailPreview, setEmailPreview] = useState<{ subject: string; body: string } | null>(null);
 
   const [error, setError] = useState<string | null>(null);
+  const [progress, setProgress] = useState<string | null>(null);
+
+  const fetchWithTimeout = useCallback(async (url: string, opts?: RequestInit, timeoutMs = 120_000) => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      return await fetch(url, { ...opts, signal: controller.signal });
+    } finally {
+      clearTimeout(timer);
+    }
+  }, []);
+
+  const loadSummary = useCallback(async () => {
+    const res = await fetchWithTimeout("/api/tracker/summary");
+    const data = await res.json();
+    if (!data.error) setSummary(data);
+    return data;
+  }, [fetchWithTimeout]);
 
   const handleDiscover = useCallback(async () => {
     setDiscovering(true);
     setError(null);
+    setProgress("Discovering 50+ active GitHub developers...");
     try {
-      const discoverRes = await fetch("/api/tracker/discover", { method: "POST" });
+      const discoverRes = await fetchWithTimeout("/api/tracker/discover", { method: "POST" }, 180_000);
       const discoverData = await discoverRes.json();
       if (!discoverRes.ok) {
         setError(discoverData.error ?? "Discovery failed");
         return;
       }
-      const refreshRes = await fetch("/api/tracker/refresh", { method: "POST" });
+      setProgress(`Found ${discoverData.tracked} developers. Fetching activity data...`);
+
+      const refreshRes = await fetchWithTimeout("/api/tracker/refresh", { method: "POST" }, 180_000);
       const refreshData = await refreshRes.json();
       if (refreshRes.ok && refreshData.success) {
-        const summaryRes = await fetch("/api/tracker/summary");
-        const summaryData = await summaryRes.json();
-        if (!summaryData.error) setSummary(summaryData);
+        setProgress("Loading analytics...");
+        await loadSummary();
       } else {
-        const summaryRes = await fetch("/api/tracker/summary");
-        const summaryData = await summaryRes.json();
-        if (!summaryData.error) setSummary(summaryData);
-        else setError("Developers discovered but refresh timed out. Click Refresh to retry.");
+        await loadSummary();
+        if (!summary) setError("Developers discovered but refresh timed out. Click Refresh to retry.");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Network error — check your connection");
+      if (err instanceof DOMException && err.name === "AbortError") {
+        setError("Request timed out. The server is still processing — click Refresh in a minute.");
+        await loadSummary().catch(() => {});
+      } else {
+        setError(err instanceof Error ? err.message : "Network error — check your connection");
+      }
     } finally {
       setDiscovering(false);
+      setProgress(null);
     }
-  }, []);
+  }, [fetchWithTimeout, loadSummary, summary]);
 
   const handleRefresh = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setProgress("Refreshing activity data for all tracked developers...");
     try {
-      const refreshRes = await fetch("/api/tracker/refresh", { method: "POST" });
+      const refreshRes = await fetchWithTimeout("/api/tracker/refresh", { method: "POST" }, 180_000);
       if (!refreshRes.ok) {
         const d = await refreshRes.json();
         setError(d.error ?? "Refresh failed");
       }
-      const res = await fetch("/api/tracker/summary");
-      const data = await res.json();
-      if (!data.error) setSummary(data);
-      else setError(data.error);
+      setProgress("Loading analytics...");
+      const data = await loadSummary();
+      if (data.error) setError(data.error);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Network error");
+      if (err instanceof DOMException && err.name === "AbortError") {
+        setError("Refresh timed out. The server is still processing — try again in a minute.");
+        await loadSummary().catch(() => {});
+      } else {
+        setError(err instanceof Error ? err.message : "Network error");
+      }
     } finally {
       setLoading(false);
+      setProgress(null);
     }
-  }, []);
+  }, [fetchWithTimeout, loadSummary]);
 
   const handleEmailPreview = useCallback(async (login: string) => {
     const res = await fetch(`/api/tracker/email?login=${login}`);
@@ -159,6 +189,18 @@ export function LiveAnalyticsClient({ summary: initialSummary, trackedCount, act
           </div>
         </div>
       </motion.div>
+
+      {/* Progress Display */}
+      {progress && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-6 rounded-xl border border-border/60 bg-foreground/2 px-4 py-3 flex items-center gap-3"
+        >
+          <Loader2 size={14} className="animate-spin text-foreground/60" />
+          <p className="text-sm text-foreground/70">{progress}</p>
+        </motion.div>
+      )}
 
       {/* Error Display */}
       {error && (
