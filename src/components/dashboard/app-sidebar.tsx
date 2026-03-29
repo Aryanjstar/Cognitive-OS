@@ -28,9 +28,13 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarHeader className="p-4">
-        <Link href="/" className="flex items-center gap-2">
+        <Link href="/" className="flex items-center gap-2.5">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-foreground">
-            <BrainCircuit className="text-background" size={18} strokeWidth={1.5} />
+            <BrainCircuit
+              className="text-background"
+              size={18}
+              strokeWidth={1.5}
+            />
           </div>
           <span className="text-lg font-semibold tracking-tight">
             Cognitive<span className="font-light">OS</span>
@@ -42,26 +46,42 @@ export function AppSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-[10px] uppercase tracking-widest">
+            Navigation
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {dashboardNav.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname === item.href}
-                    className={cn(
-                      "transition-colors",
-                      pathname === item.href && "bg-muted font-medium"
-                    )}
-                  >
-                    <Link href={item.href}>
-                      <item.icon size={18} />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {dashboardNav.map((item) => {
+                const isActive =
+                  pathname === item.href ||
+                  (item.href !== "/dashboard" &&
+                    pathname.startsWith(item.href));
+                return (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive}
+                      className={cn(
+                        "transition-all duration-150",
+                        isActive &&
+                          "bg-foreground/5 font-medium"
+                      )}
+                    >
+                      <Link href={item.href}>
+                        <item.icon
+                          size={18}
+                          className={cn(
+                            isActive
+                              ? "text-foreground"
+                              : "text-muted-foreground"
+                          )}
+                        />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -72,7 +92,7 @@ export function AppSidebar() {
               <SidebarMenuItem>
                 <SidebarMenuButton asChild className="transition-colors">
                   <Link href="/">
-                    <Home size={18} />
+                    <Home size={18} className="text-muted-foreground" />
                     <span>Back to Home</span>
                   </Link>
                 </SidebarMenuButton>
