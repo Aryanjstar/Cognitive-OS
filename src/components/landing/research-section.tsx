@@ -17,15 +17,16 @@ export function ResearchSection() {
           className="text-center"
         >
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-foreground/40">
-            Backed by Research
+            Backed by Research · Real-Time Tracking
           </p>
           <h2 className="mt-4 text-3xl font-bold tracking-tight md:text-4xl">
-            30+ developers analyzed.{" "}
+            50+ developers tracked live.{" "}
             <span className="text-foreground/50">Real data. Real results.</span>
           </h2>
           <p className="mx-auto mt-5 max-w-xl text-muted-foreground">
-            We studied cognitive load patterns across 30+ real GitHub developers — from
+            We track cognitive load patterns across 50+ active GitHub developers in real-time — from
             framework creators to systems programmers — using 7 research-grade formulas.
+            Data refreshes automatically every 6 hours.
           </p>
         </motion.div>
 
@@ -38,9 +39,9 @@ export function ResearchSection() {
         >
           <ResearchStat
             icon={Users}
-            value="33"
-            label="Developers Analyzed"
-            description="Real GitHub profiles with verified public data"
+            value="50+"
+            label="Developers Tracked Live"
+            description="Real-time GitHub activity, auto-refreshed every 6 hours"
           />
           <ResearchStat
             icon={Brain}
@@ -67,11 +68,17 @@ export function ResearchSection() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5, delay: 0.3 }}
-          className="mt-12 text-center"
+          className="mt-12 flex justify-center gap-4"
         >
           <Button variant="outline" asChild className="gap-2">
+            <Link href="/analytics-live">
+              Live Analytics Dashboard
+              <ArrowRight size={14} />
+            </Link>
+          </Button>
+          <Button variant="outline" asChild className="gap-2">
             <Link href="/research">
-              View Full Research Data
+              Research Data
               <ArrowRight size={14} />
             </Link>
           </Button>

@@ -258,3 +258,63 @@ model AgentRecommendation {
 
   @@index([userId, createdAt])
 }
+
+// ─── Real-Time GitHub Activity Tracking ──────────────────────
+
+model TrackedDeveloper {
+  id              String   @id @default(cuid())
+  githubLogin     String   @unique
+  githubId        Int      @unique
+  name            String?
+  email           String?
+  avatarUrl       String?
+  bio             String?  @db.Text
+  company         String?
+  location        String?
+  publicRepos     Int      @default(0)
+  followers       Int      @default(0)
+  following       Int      @default(0)
+  category        String   @default("contributor")
+  isActive        Boolean  @default(true)
+  lastFetchedAt   DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  activitySnapshots ActivitySnapshot[]
+
+  @@index([category])
+  @@index([isActive, lastFetchedAt])
+}
+
+model ActivitySnapshot {
+  id                String   @id @default(cuid())
+  developerId       String
+  period            String   // "day", "week", "month", "year"
+  periodStart       DateTime
+  periodEnd         DateTime
+  commitsCount      Int      @default(0)
+  prsOpened         Int      @default(0)
+  prsMerged         Int      @default(0)
+  prsReviewed       Int      @default(0)
+  issuesOpened      Int      @default(0)
+  issuesClosed      Int      @default(0)
+  reposContributed  Int      @default(0)
+  linesAdded        Int      @default(0)
+  linesRemoved      Int      @default(0)
+  avgPrSize         Float    @default(0)
+  activeDays        Int      @default(0)
+  longestStreak     Int      @default(0)
+  contextSwitchEst  Float    @default(0)
+  cognitiveLoadEst  Float    @default(0)
+  timeSavingsHrs    Float    @default(0)
+  productivityGain  Float    @default(0)
+  burnoutRisk       Float    @default(0)
+  rawData           Json     @default("{}")
+  fetchedAt         DateTime @default(now())
+
+  developer TrackedDeveloper @relation(fields: [developerId], references: [id], onDelete: Cascade)
+
+  @@unique([developerId, period, periodStart])
+  @@index([developerId, period])
+  @@index([fetchedAt])
+}

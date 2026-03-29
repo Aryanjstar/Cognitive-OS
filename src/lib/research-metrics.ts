@@ -207,12 +207,12 @@ export function computeBurnoutRisk(
   contextSwitchesTrend: number, // positive = increasing
   focusRatio: number // 0-1, time in focus / total time
 ): number {
-  const loadNorm = Math.min(avgCognitiveLoad7d / 100, 1);
+  const loadNorm = Math.min(Math.max(avgCognitiveLoad7d / 100, 0), 1);
   const switchNorm = Math.min(Math.max(contextSwitchesTrend / 10, 0), 1);
   const focusDeficit = 1 - Math.min(Math.max(focusRatio, 0), 1);
 
   const risk = 0.4 * loadNorm + 0.3 * switchNorm + 0.3 * focusDeficit;
-  return Math.round(Math.min(risk, 1) * 100) / 100;
+  return Math.round(Math.max(Math.min(risk, 1), 0) * 100) / 100;
 }
 
 // ─── Formula 7: Productivity Gain Measurement ────────────────
