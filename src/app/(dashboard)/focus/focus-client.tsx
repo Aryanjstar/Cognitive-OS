@@ -1,11 +1,22 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Play, Pause, Square, Timer, Flame, Zap } from "lucide-react";
+import {
+  Play,
+  Pause,
+  Square,
+  Timer,
+  Flame,
+  Zap,
+  TrendingUp,
+  TrendingDown,
+  Target,
+} from "lucide-react";
 import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface Session {
   id: string;
@@ -20,6 +31,45 @@ interface Session {
 interface FocusClientProps {
   sessions: Session[];
   userId: string;
+}
+
+function calculateFocusScore(session: Session): number {
+  const durationMinutes = session.duration / 60;
+  const durationScore = Math.min(durationMinutes / 90, 1) * 50;
+  const interruptionPenalty = session.interruptionCount * 8;
+  const continuityBonus = !session.interrupted ? 20 : 0;
+  const deepWorkBonus = durationMinutes >= 25 ? 15 : durationMinutes >= 15 ? 8 : 0;
+  return Math.max(
+    0,
+    Math.min(100, Math.round(durationScore + continuityBonus + deepWorkBonus - interruptionPenalty))
+  );
+}
+
+function getSessionInsight(session: Session): string {
+  const score = calculateFocusScore(session);
+  const mins = Math.round(session.duration / 60);
+
+  if (score >= 80)
+    return `Excellent ${mins}min deep work session with minimal interruptions.`;
+  if (score >= 60)
+    return `Good ${mins}min session. ${session.interruptionCount > 0 ? `${session.interruptionCount} interruption(s) reduced effectiveness.` : "Solid focus maintained."}`;
+  if (score >= 40)
+    return `Moderate session. ${session.interrupted ? "Interruptions fragmented your focus." : "Consider longer sessions for deeper work."}`;
+  return `Short or disrupted session. Try blocking notifications for your next session.`;
+}
+
+function getFocusScoreColor(score: number): string {
+  if (score >= 80) return "text-zinc-900";
+  if (score >= 60) return "text-zinc-700";
+  if (score >= 40) return "text-zinc-500";
+  return "text-zinc-400";
+}
+
+function getFocusScoreBg(score: number): string {
+  if (score >= 80) return "bg-zinc-900 text-zinc-100";
+  if (score >= 60) return "bg-zinc-600 text-zinc-100";
+  if (score >= 40) return "bg-zinc-300 text-zinc-800";
+  return "bg-zinc-100 text-zinc-500";
 }
 
 export function FocusClient({ sessions }: FocusClientProps) {
@@ -40,7 +90,8 @@ export function FocusClient({ sessions }: FocusClientProps) {
     const h = Math.floor(seconds / 3600);
     const m = Math.floor((seconds % 3600) / 60);
     const s = seconds % 60;
-    if (h > 0) return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+    if (h > 0)
+      return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
     return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
   };
 
@@ -62,11 +113,55 @@ export function FocusClient({ sessions }: FocusClientProps) {
     (s) =>
       new Date(s.startedAt).toDateString() === new Date().toDateString()
   );
-  const totalFocusToday = todaySessions.reduce((sum, s) => sum + s.duration, 0);
+  const totalFocusToday = todaySessions.reduce(
+    (sum, s) => sum + s.duration,
+    0
+  );
   const totalInterruptions = todaySessions.reduce(
     (sum, s) => sum + s.interruptionCount,
     0
   );
+
+  const todayFocusScore = useMemo(() => {
+    if (todaySessions.length === 0) return 0;
+    const scores = todaySessions.map(calculateFocusScore);
+    return Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+  }, [todaySessions]);
+
+  const weeklyInsights = useMemo(() => {
+    const weekSessions = sessions.filter(
+      (s) =>
+        Date.now() - new Date(s.startedAt).getTime() < 7 * 24 * 60 * 60 * 1000
+    );
+
+    if (weekSessions.length < 2) return null;
+
+    const avgScore =
+      weekSessions.reduce((sum, s) => sum + calculateFocusScore(s), 0) /
+      weekSessions.length;
+    const avgDuration =
+      weekSessions.reduce((sum, s) => sum + s.duration, 0) /
+      weekSessions.length;
+    const interruptRate =
+      weekSessions.filter((s) => s.interrupted).length / weekSessions.length;
+
+    const peakHours: Record<number, number> = {};
+    for (const s of weekSessions) {
+      const h = new Date(s.startedAt).getHours();
+      peakHours[h] = (peakHours[h] || 0) + s.duration;
+    }
+    const bestHour = Object.entries(peakHours).sort(
+      ([, a], [, b]) => b - a
+    )[0];
+
+    return {
+      avgScore: Math.round(avgScore),
+      avgDurationMin: Math.round(avgDuration / 60),
+      interruptRate: Math.round(interruptRate * 100),
+      bestHour: bestHour ? parseInt(bestHour[0]) : null,
+      totalSessions: weekSessions.length,
+    };
+  }, [sessions]);
 
   const hours = Array.from({ length: 24 }, (_, i) => i);
   const days = Array.from({ length: 7 }, (_, i) => {
@@ -108,7 +203,7 @@ export function FocusClient({ sessions }: FocusClientProps) {
                 <Button
                   variant={mode === "free" ? "default" : "ghost"}
                   size="sm"
-                  className="h-6 text-xs px-2"
+                  className="h-6 px-2 text-xs"
                   onClick={() => setMode("free")}
                 >
                   Free
@@ -116,7 +211,7 @@ export function FocusClient({ sessions }: FocusClientProps) {
                 <Button
                   variant={mode === "pomodoro" ? "default" : "ghost"}
                   size="sm"
-                  className="h-6 text-xs px-2"
+                  className="h-6 px-2 text-xs"
                   onClick={() => setMode("pomodoro")}
                 >
                   Pomodoro
@@ -126,7 +221,7 @@ export function FocusClient({ sessions }: FocusClientProps) {
           </CardHeader>
           <CardContent>
             <div className="flex flex-col items-center py-8">
-              <div className="text-5xl font-mono font-bold tracking-wider">
+              <div className="font-mono text-5xl font-bold tracking-wider">
                 {mode === "pomodoro" && pomodoroRemaining != null
                   ? formatTime(pomodoroRemaining)
                   : formatTime(elapsed)}
@@ -135,6 +230,14 @@ export function FocusClient({ sessions }: FocusClientProps) {
                 <p className="mt-2 text-xs text-muted-foreground">
                   {POMODORO_MINUTES} minute session
                 </p>
+              )}
+              {isRunning && elapsed >= 60 && (
+                <div className="mt-3 flex items-center gap-2">
+                  <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-zinc-900" />
+                  <span className="text-xs text-muted-foreground">
+                    Focus active
+                  </span>
+                </div>
               )}
               <div className="mt-8 flex gap-3">
                 {!isRunning ? (
@@ -173,16 +276,40 @@ export function FocusClient({ sessions }: FocusClientProps) {
           </CardContent>
         </Card>
 
-        <div className="lg:col-span-2 space-y-6">
-          <div className="grid gap-4 sm:grid-cols-3">
+        <div className="space-y-6 lg:col-span-2">
+          <div className="grid gap-4 sm:grid-cols-4">
             <Card>
-              <CardContent className="p-5">
+              <CardContent className="p-4">
                 <div className="flex items-center gap-3">
                   <div className="rounded-lg bg-muted p-2">
-                    <Timer size={18} className="text-muted-foreground" />
+                    <Target size={16} className="text-muted-foreground" />
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Focus Today</p>
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                      Focus Score
+                    </p>
+                    <p
+                      className={cn(
+                        "text-xl font-bold",
+                        getFocusScoreColor(todayFocusScore)
+                      )}
+                    >
+                      {todayFocusScore}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-lg bg-muted p-2">
+                    <Timer size={16} className="text-muted-foreground" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                      Focus Today
+                    </p>
                     <p className="text-xl font-bold">
                       {Math.floor(totalFocusToday / 3600)}h{" "}
                       {Math.floor((totalFocusToday % 3600) / 60)}m
@@ -192,32 +319,89 @@ export function FocusClient({ sessions }: FocusClientProps) {
               </CardContent>
             </Card>
             <Card>
-              <CardContent className="p-5">
+              <CardContent className="p-4">
                 <div className="flex items-center gap-3">
                   <div className="rounded-lg bg-muted p-2">
-                    <Flame size={18} className="text-muted-foreground" />
+                    <Flame size={16} className="text-muted-foreground" />
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Sessions</p>
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                      Sessions
+                    </p>
                     <p className="text-xl font-bold">{todaySessions.length}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
             <Card>
-              <CardContent className="p-5">
+              <CardContent className="p-4">
                 <div className="flex items-center gap-3">
                   <div className="rounded-lg bg-muted p-2">
-                    <Zap size={18} className="text-muted-foreground" />
+                    <Zap size={16} className="text-muted-foreground" />
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Interruptions</p>
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                      Interruptions
+                    </p>
                     <p className="text-xl font-bold">{totalInterruptions}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
           </div>
+
+          {weeklyInsights && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Weekly Insights
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                      Avg Score
+                    </p>
+                    <p className="mt-1 flex items-center gap-1 text-lg font-bold">
+                      {weeklyInsights.avgScore}
+                      {weeklyInsights.avgScore >= 60 ? (
+                        <TrendingUp size={14} className="text-zinc-600" />
+                      ) : (
+                        <TrendingDown size={14} className="text-zinc-400" />
+                      )}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                      Avg Duration
+                    </p>
+                    <p className="mt-1 text-lg font-bold">
+                      {weeklyInsights.avgDurationMin}m
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                      Interrupt Rate
+                    </p>
+                    <p className="mt-1 text-lg font-bold">
+                      {weeklyInsights.interruptRate}%
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                      Best Hour
+                    </p>
+                    <p className="mt-1 text-lg font-bold">
+                      {weeklyInsights.bestHour !== null
+                        ? `${weeklyInsights.bestHour}:00`
+                        : "—"}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           <Card>
             <CardHeader className="pb-2">
@@ -286,28 +470,48 @@ export function FocusClient({ sessions }: FocusClientProps) {
                 No focus sessions recorded yet. Start your first session above.
               </div>
             ) : (
-              sessions.slice(0, 10).map((s) => (
-                <div key={s.id} className="flex items-center justify-between px-6 py-3">
-                  <div>
-                    <span className="text-sm font-medium">
-                      {format(new Date(s.startedAt), "MMM d, h:mm a")}
-                    </span>
-                    <span className="ml-2 text-xs text-muted-foreground">
-                      {s.taskType}
-                    </span>
+              sessions.slice(0, 10).map((s) => {
+                const score = calculateFocusScore(s);
+                const insight = getSessionInsight(s);
+                return (
+                  <div key={s.id} className="px-6 py-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={cn(
+                            "flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold",
+                            getFocusScoreBg(score)
+                          )}
+                        >
+                          {score}
+                        </div>
+                        <div>
+                          <span className="text-sm font-medium">
+                            {format(new Date(s.startedAt), "MMM d, h:mm a")}
+                          </span>
+                          <span className="ml-2 text-xs text-muted-foreground">
+                            {s.taskType}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        {s.interrupted && (
+                          <Badge variant="secondary" className="text-xs">
+                            {s.interruptionCount} interruption
+                            {s.interruptionCount !== 1 ? "s" : ""}
+                          </Badge>
+                        )}
+                        <span className="font-mono text-sm">
+                          {Math.floor(s.duration / 60)}m
+                        </span>
+                      </div>
+                    </div>
+                    <p className="mt-1.5 pl-11 text-xs text-muted-foreground">
+                      {insight}
+                    </p>
                   </div>
-                  <div className="flex items-center gap-3">
-                    {s.interrupted && (
-                      <Badge variant="secondary" className="text-xs">
-                        {s.interruptionCount} interruption{s.interruptionCount !== 1 ? "s" : ""}
-                      </Badge>
-                    )}
-                    <span className="text-sm font-mono">
-                      {Math.floor(s.duration / 60)}m
-                    </span>
-                  </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </CardContent>
