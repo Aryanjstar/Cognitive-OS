@@ -22,7 +22,7 @@ export default async function AnalyticsPage() {
     }),
     prisma.focusSession.findMany({
       where: { userId: user.id, startedAt: { gte: thirtyDaysAgo } },
-      select: { duration: true, startedAt: true },
+      select: { duration: true, startedAt: true, interrupted: true },
     }),
     prisma.contextSwitch.findMany({
       where: { userId: user.id, switchedAt: { gte: thirtyDaysAgo } },
@@ -45,9 +45,10 @@ export default async function AnalyticsPage() {
         avgCognitiveLoad: d.avgCognitiveLoad,
         deepWorkStreaks: d.deepWorkStreaks,
       }))}
-      focusSessions={focusSessions.map((s: { duration: number; startedAt: Date }) => ({
+      focusSessions={focusSessions.map((s: { duration: number; startedAt: Date; interrupted: boolean }) => ({
         duration: s.duration,
         startedAt: s.startedAt.toISOString(),
+        interrupted: s.interrupted,
       }))}
       switches={switches.map((s: { switchedAt: Date; estimatedCost: number }) => ({
         switchedAt: s.switchedAt.toISOString(),
