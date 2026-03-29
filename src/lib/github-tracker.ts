@@ -540,35 +540,56 @@ export async function getTrackerSummary(): Promise<TrackerSummary | null> {
     where: { isActive: true },
     include: {
       activitySnapshots: {
-        where: { period: "month" },
+        where: { period: { in: ["day", "week", "month", "year"] } },
         orderBy: { fetchedAt: "desc" },
-        take: 1,
       },
     },
   });
 
   if (developers.length === 0) return null;
 
+  const emptyMetrics: PeriodMetrics = {
+    commits: 0, prsOpened: 0, prsMerged: 0, prsReviewed: 0,
+    issuesOpened: 0, issuesClosed: 0, reposContributed: 0,
+    linesAdded: 0, linesRemoved: 0, activeDays: 0, longestStreak: 0,
+    cognitiveLoadEst: 0, contextSwitchEst: 0, burnoutRisk: 0,
+  };
+
+  function snapToMetrics(snap: typeof developers[0]["activitySnapshots"][0]): PeriodMetrics {
+    return {
+      commits: snap.commitsCount,
+      prsOpened: snap.prsOpened,
+      prsMerged: snap.prsMerged,
+      prsReviewed: snap.prsReviewed,
+      issuesOpened: snap.issuesOpened,
+      issuesClosed: snap.issuesClosed,
+      reposContributed: snap.reposContributed,
+      linesAdded: snap.linesAdded,
+      linesRemoved: snap.linesRemoved,
+      activeDays: snap.activeDays,
+      longestStreak: snap.longestStreak,
+      cognitiveLoadEst: snap.cognitiveLoadEst,
+      contextSwitchEst: snap.contextSwitchEst,
+      burnoutRisk: snap.burnoutRisk,
+    };
+  }
+
   const results: DeveloperActivity[] = developers
     .filter((d) => d.activitySnapshots.length > 0)
     .map((d) => {
-      const snap = d.activitySnapshots[0];
-      const monthMetrics: PeriodMetrics = {
-        commits: snap.commitsCount,
-        prsOpened: snap.prsOpened,
-        prsMerged: snap.prsMerged,
-        prsReviewed: snap.prsReviewed,
-        issuesOpened: snap.issuesOpened,
-        issuesClosed: snap.issuesClosed,
-        reposContributed: snap.reposContributed,
-        linesAdded: snap.linesAdded,
-        linesRemoved: snap.linesRemoved,
-        activeDays: snap.activeDays,
-        longestStreak: snap.longestStreak,
-        cognitiveLoadEst: snap.cognitiveLoadEst,
-        contextSwitchEst: snap.contextSwitchEst,
-        burnoutRisk: snap.burnoutRisk,
-      };
+      const latestByPeriod = new Map<string, typeof d.activitySnapshots[0]>();
+      for (const snap of d.activitySnapshots) {
+        if (!latestByPeriod.has(snap.period)) {
+          latestByPeriod.set(snap.period, snap);
+        }
+      }
+
+      const daySnap = latestByPeriod.get("day");
+      const weekSnap = latestByPeriod.get("week");
+      const monthSnap = latestByPeriod.get("month");
+      const yearSnap = latestByPeriod.get("year");
+
+      const monthMetrics = monthSnap ? snapToMetrics(monthSnap) : emptyMetrics;
 
       return {
         login: d.githubLogin,
@@ -579,7 +600,12 @@ export async function getTrackerSummary(): Promise<TrackerSummary | null> {
         publicRepos: d.publicRepos,
         followers: d.followers,
         category: d.category,
-        periods: { day: monthMetrics, week: monthMetrics, month: monthMetrics, year: monthMetrics },
+        periods: {
+          day: daySnap ? snapToMetrics(daySnap) : emptyMetrics,
+          week: weekSnap ? snapToMetrics(weekSnap) : emptyMetrics,
+          month: monthMetrics,
+          year: yearSnap ? snapToMetrics(yearSnap) : emptyMetrics,
+        },
         timeSavings: computeTimeSavings(monthMetrics),
         lastFetched: d.lastFetchedAt?.toISOString() ?? "",
       };

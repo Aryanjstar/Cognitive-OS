@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import {
   RefreshCw, Users, Clock, TrendingUp, Brain, Mail,
   ArrowDown, ArrowUp, Activity, Zap, GitPullRequest,
-  GitCommit, Bug, Eye, Loader2,
+  GitCommit, Eye, Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -193,7 +193,7 @@ export function LiveAnalyticsClient({ summary: initialSummary, trackedCount, act
         >
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border/60 bg-foreground/[0.02]">
+              <tr className="border-b border-border/60 bg-foreground/2">
                 <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Developer</th>
                 <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground">Category</th>
                 <th className="cursor-pointer px-3 py-3 text-right text-xs font-medium text-muted-foreground hover:text-foreground" onClick={() => toggleSort("commits")}>
@@ -218,7 +218,7 @@ export function LiveAnalyticsClient({ summary: initialSummary, trackedCount, act
               {sorted.map((dev) => {
                 const p = dev.periods[period];
                 return (
-                  <tr key={dev.login} className="border-b border-border/40 last:border-0 hover:bg-foreground/[0.02] transition-colors">
+                  <tr key={dev.login} className="border-b border-border/40 last:border-0 hover:bg-foreground/2 transition-colors">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         {dev.avatarUrl ? (
@@ -296,7 +296,7 @@ export function LiveAnalyticsClient({ summary: initialSummary, trackedCount, act
           transition={{ duration: 0.6, delay: 0.2 }}
           className="mt-20 text-center"
         >
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-foreground/[0.04]">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-foreground/4">
             <Zap size={24} className="text-foreground/40" />
           </div>
           <h2 className="mt-6 text-xl font-semibold">No developers tracked yet</h2>
@@ -329,11 +329,11 @@ export function LiveAnalyticsClient({ summary: initialSummary, trackedCount, act
               <h3 className="text-sm font-semibold">Email Preview</h3>
               <Button size="sm" variant="ghost" onClick={() => setEmailPreview(null)}>Close</Button>
             </div>
-            <div className="mt-4 rounded-lg bg-foreground/[0.02] p-4">
+            <div className="mt-4 rounded-lg bg-foreground/2 p-4">
               <p className="text-xs text-muted-foreground">Subject:</p>
               <p className="mt-1 text-sm font-medium">{emailPreview.subject}</p>
             </div>
-            <div className="mt-4 rounded-lg bg-foreground/[0.02] p-4">
+            <div className="mt-4 rounded-lg bg-foreground/2 p-4">
               <p className="text-xs text-muted-foreground">Body:</p>
               <pre className="mt-2 whitespace-pre-wrap text-xs leading-relaxed text-foreground/80 font-sans">
                 {emailPreview.body}
@@ -364,7 +364,7 @@ function StatCard({ icon: Icon, label, value, sub }: {
 }) {
   return (
     <div className="rounded-2xl border border-border/80 p-5">
-      <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-lg bg-foreground/[0.04]">
+      <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-lg bg-foreground/4">
         <Icon size={14} className="text-foreground/60" />
       </div>
       <p className="text-2xl font-bold tabular-nums tracking-tight">{value}</p>

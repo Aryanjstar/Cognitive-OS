@@ -64,7 +64,7 @@ export function ResearchClient({ developers, aggregate }: Props) {
         </p>
         <h1 className="mt-4 text-4xl font-bold tracking-tight md:text-5xl lg:text-6xl">
           Cognitive Load Measurement{" "}
-          <span className="bg-gradient-to-r from-foreground via-foreground/70 to-foreground/40 bg-clip-text text-transparent">
+          <span className="bg-linear-to-r from-foreground via-foreground/70 to-foreground/40 bg-clip-text text-transparent">
             in Software Engineering
           </span>
         </h1>
@@ -203,7 +203,7 @@ export function ResearchClient({ developers, aggregate }: Props) {
         <div className="mt-6 overflow-x-auto rounded-2xl border border-border/80">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border/60 bg-foreground/[0.02]">
+              <tr className="border-b border-border/60 bg-foreground/2">
                 <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Developer</th>
                 <th className="cursor-pointer px-3 py-3 text-right text-xs font-medium text-muted-foreground hover:text-foreground" onClick={() => toggleSort("cognitiveLoadIndex")}>
                   <span className="inline-flex items-center gap-1">CLI <SortIcon col="cognitiveLoadIndex" /></span>
@@ -227,8 +227,8 @@ export function ResearchClient({ developers, aggregate }: Props) {
               </tr>
             </thead>
             <tbody>
-              {sorted.map((dev, i) => (
-                <tr key={dev.id} className="border-b border-border/40 last:border-0 hover:bg-foreground/[0.02] transition-colors">
+              {sorted.map((dev) => (
+                <tr key={dev.id} className="border-b border-border/40 last:border-0 hover:bg-foreground/2 transition-colors">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       {dev.image ? (
@@ -351,7 +351,7 @@ function StatCard({ icon: Icon, label, value, sub }: {
 }) {
   return (
     <div className="rounded-2xl border border-border/80 p-5">
-      <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-lg bg-foreground/[0.04]">
+      <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-lg bg-foreground/4">
         <Icon size={14} className="text-foreground/60" />
       </div>
       <p className="text-2xl font-bold tabular-nums tracking-tight">{value}</p>
@@ -372,7 +372,7 @@ function FormulaCard({ number, title, formula, description, citation }: {
         </span>
         <h3 className="text-sm font-semibold">{title}</h3>
       </div>
-      <div className="mt-4 overflow-x-auto rounded-lg bg-foreground/[0.03] p-3">
+      <div className="mt-4 overflow-x-auto rounded-lg bg-foreground/3 p-3">
         <code className="text-xs font-mono text-foreground/80 whitespace-pre-wrap">{formula}</code>
       </div>
       <p className="mt-3 text-xs text-muted-foreground leading-relaxed">{description}</p>

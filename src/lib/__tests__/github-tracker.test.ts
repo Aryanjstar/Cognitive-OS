@@ -17,7 +17,7 @@ import {
   computeCognitiveLoadIndex,
   detectAnomaly,
   computeHistoricalBlend,
-} from "@/lib/research-metrics";
+} from "../research-metrics";
 
 // ─── Test Helpers ────────────────────────────────────────────
 
@@ -230,4 +230,10 @@ function testExtremeValues() {
   const extremeGain = computeProductivityGain(100, 0, 60, 480);
   assert(extremeGain.timeSavedHoursPerMonth > 0, "Extreme improvement should produce savings");
   assert(isFinite(extremeGain.monetarySavingsPerMonth), "Monetary savings should be finite");
+}
+
+if (typeof process !== "undefined" && process.argv[1]?.includes("github-tracker.test")) {
+  runAllTests().then((r) => {
+    process.exit(r.failed > 0 ? 1 : 0);
+  });
 }
