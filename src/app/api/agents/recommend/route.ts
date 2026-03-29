@@ -4,6 +4,10 @@ import { authOptions } from "@/lib/auth";
 import { runOrchestrator } from "@/lib/ai/agents/orchestrator";
 import { prisma } from "@/lib/prisma";
 import { createChildLogger, logError, logAgentRun } from "@/lib/logger";
+import {
+  agentRecommendPostSchema,
+  agentRecommendPatchSchema,
+} from "@/lib/api-validation";
 
 const log = createChildLogger("api:agents");
 
@@ -16,12 +20,21 @@ export async function POST(request: Request) {
     }
 
     const userId = session.user.id;
-    const body = await request.json();
-    const trigger = body.trigger ?? "manual";
+    const raw = await request.json();
+    const parsed = agentRecommendPostSchema.safeParse(raw);
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid request", details: parsed.error.flatten().fieldErrors },
+        { status: 400 }
+      );
+    }
+
+    const { trigger, newTaskContext } = parsed.data;
 
     log.info({ userId, trigger }, "Running agent orchestrator");
 
-    const results = await runOrchestrator(userId, trigger, body.newTaskContext);
+    const results = await runOrchestrator(userId, trigger, newTaskContext);
 
     const duration = Date.now() - start;
     logAgentRun("orchestrator", userId, duration, {
@@ -46,18 +59,27 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id, dismissed } = await request.json();
+    const raw = await request.json();
+    const parsed = agentRecommendPatchSchema.safeParse(raw);
 
-    if (!id) {
-      return NextResponse.json({ error: "id is required" }, { status: 400 });
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid request", details: parsed.error.flatten().fieldErrors },
+        { status: 400 }
+      );
     }
+
+    const { id, dismissed } = parsed.data;
 
     await prisma.agentRecommendation.update({
       where: { id, userId: session.user.id },
       data: { dismissed },
     });
 
-    log.info({ userId: session.user.id, recommendationId: id, dismissed }, "Recommendation updated");
+    log.info(
+      { userId: session.user.id, recommendationId: id, dismissed },
+      "Recommendation updated"
+    );
 
     return NextResponse.json({ success: true });
   } catch (error) {

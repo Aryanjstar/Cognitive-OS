@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { generateBriefing } from "@/lib/ai/briefing-generator";
 import { createChildLogger, logError } from "@/lib/logger";
+import { briefingPostSchema } from "@/lib/api-validation";
 
 const log = createChildLogger("api:ai:briefing");
 
@@ -15,16 +16,18 @@ export async function POST(request: Request) {
     }
 
     const userId = session.user.id;
-    const body = await request.json();
-    const { taskId, taskType } = body;
+    const raw = await request.json();
+    const parsed = briefingPostSchema.safeParse(raw);
 
-    if (!taskId || !taskType) {
-      log.warn({ userId, body }, "Missing required fields");
+    if (!parsed.success) {
+      log.warn({ userId, errors: parsed.error.flatten() }, "Validation failed");
       return NextResponse.json(
-        { error: "taskId and taskType are required" },
+        { error: "Invalid request", details: parsed.error.flatten().fieldErrors },
         { status: 400 }
       );
     }
+
+    const { taskId, taskType } = parsed.data;
 
     log.info({ userId, taskId, taskType }, "Generating briefing");
 

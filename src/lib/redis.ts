@@ -45,6 +45,23 @@ function getRedisClient(): Redis | null {
 }
 
 const memoryCache = new Map<string, { value: string; expiresAt: number }>();
+const MEMORY_CACHE_MAX_SIZE = 500;
+
+// Periodic cleanup of expired entries (every 60s)
+let cleanupTimer: ReturnType<typeof setInterval> | null = null;
+function ensureCleanupTimer() {
+  if (cleanupTimer) return;
+  cleanupTimer = setInterval(() => {
+    const now = Date.now();
+    for (const [key, entry] of memoryCache) {
+      if (entry.expiresAt <= now) memoryCache.delete(key);
+    }
+  }, 60_000);
+  // Allow process to exit without waiting for timer
+  if (cleanupTimer && typeof cleanupTimer === "object" && "unref" in cleanupTimer) {
+    cleanupTimer.unref();
+  }
+}
 
 export async function cacheGet<T>(key: string): Promise<T | null> {
   const client = getRedisClient();
@@ -79,6 +96,12 @@ export async function cacheSet(
       // fall through to memory cache
     }
   }
+  // Evict oldest entries if cache is full
+  if (memoryCache.size >= MEMORY_CACHE_MAX_SIZE) {
+    const firstKey = memoryCache.keys().next().value;
+    if (firstKey) memoryCache.delete(firstKey);
+  }
+  ensureCleanupTimer();
   memoryCache.set(key, {
     value: serialized,
     expiresAt: Date.now() + ttlSeconds * 1000,
