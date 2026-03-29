@@ -165,6 +165,16 @@ export default async function DashboardPage() {
           fatigueIndex: number;
           staleness: number;
         } | undefined,
+        anomaly: (latestSnapshot?.factors as Record<string, unknown>)?.anomaly as {
+          isAnomaly: boolean;
+          severity: "mild" | "moderate" | "severe";
+          delta: number;
+        } | undefined,
+        trend: (latestSnapshot?.factors as Record<string, unknown>)?.trend as
+          | "improving"
+          | "stable"
+          | "declining"
+          | undefined,
       }}
       history={recentSnapshots.map((s: SnapshotSelect) => ({
         score: s.score,
