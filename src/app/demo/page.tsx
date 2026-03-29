@@ -5,28 +5,10 @@ import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { ArrowRight, GitFork, CircleDot, GitPullRequest } from "lucide-react";
 
-const DEMO_EMAILS = [
-  "antfu7@gmail.com",
-  "wesbos@gmail.com",
-  "me@kentcdodds.com",
-  "theo@t3.gg",
-  "shadcn@gmail.com",
-];
-
-interface UserWithCounts {
-  id: string;
-  name: string | null;
-  image: string | null;
-  email: string | null;
-  repos: number;
-  issues: number;
-  prs: number;
-}
-
-async function getDemoUsers(): Promise<UserWithCounts[]> {
+async function getAllDemoUsers(): Promise<UserWithCounts[]> {
   const users = await prisma.user.findMany({
-    where: { email: { in: DEMO_EMAILS } },
     select: { id: true, name: true, image: true, email: true },
+    orderBy: { createdAt: "asc" },
   });
 
   const usersWithCounts = await Promise.all(
@@ -43,6 +25,18 @@ async function getDemoUsers(): Promise<UserWithCounts[]> {
   return usersWithCounts;
 }
 
+interface UserWithCounts {
+  id: string;
+  name: string | null;
+  image: string | null;
+  email: string | null;
+  repos: number;
+  issues: number;
+  prs: number;
+}
+
+const getDemoUsers = getAllDemoUsers;
+
 export default async function DemoPage() {
   const users = await getDemoUsers();
 
@@ -56,8 +50,8 @@ export default async function DemoPage() {
           Explore real dashboards
         </h1>
         <p className="mx-auto mt-5 max-w-xl text-muted-foreground md:text-lg">
-          Select a developer to see their Cognitive OS dashboard populated with
-          real GitHub data. No sign-up required.
+          Select any of our {users.length}+ analyzed developers to see their Cognitive OS
+          dashboard populated with real GitHub data. No sign-up required.
         </p>
       </div>
 

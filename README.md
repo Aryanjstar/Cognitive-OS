@@ -2,7 +2,7 @@
 
 **AI-powered cognitive operating system for software engineers.**
 
-Tracks mental workload, context switching, and focus patterns — then uses multi-agent AI to protect your deep work.
+Tracks mental workload, context switching, and focus patterns — then uses multi-agent AI to protect your deep work. Includes a research-grade metrics framework with data from 33 real GitHub developers.
 
 ---
 
@@ -11,12 +11,15 @@ Tracks mental workload, context switching, and focus patterns — then uses mult
 | Capability | Description |
 |---|---|
 | **Cognitive Load Score** | Live 0-100 metric fusing task complexity, context switches, review burden, fatigue, and staleness |
+| **Adaptive Scoring** | Weights learn from individual developer patterns; exponential decay blending with historical data |
+| **Anomaly Detection** | Z-score based spike detection with severity levels (mild/moderate/severe) |
 | **GitHub Integration** | One-click OAuth syncs repos, issues, PRs, commits — calculates complexity scores automatically |
 | **AI Context Briefings** | GPT-4.1 generates structured memory-reload briefings when you return to a task |
-| **Multi-Agent Intelligence** | Focus Agent, Planning Agent, and Interrupt Guard work together to protect flow state |
-| **Focus Timer** | Built-in Pomodoro/free-form timer with interruption detection and deep work tracking |
-| **Cognitive Analytics** | 30-day trends, daily breakdowns, context switch cost analysis, heatmaps |
+| **Multi-Agent Intelligence** | Focus Agent, Planning Agent, Interrupt Guard, and Agent Memory Layer work together |
+| **Focus Timer** | Built-in Pomodoro/free-form timer with per-session scoring and weekly insights |
+| **Cognitive Analytics** | 30-day trends, burnout prediction, best working hours, weekly/monthly summaries |
 | **Smart Task Sequencing** | AI reorders your task queue based on complexity, energy state, and time of day |
+| **Research Dashboard** | 33 developer comparison, 7 formal metrics, exportable CSV/JSON data for papers |
 
 ---
 
@@ -80,21 +83,28 @@ Tracks mental workload, context switching, and focus patterns — then uses mult
 
 ## Cognitive Load Formula
 
-The score is calculated from 6 weighted factors, normalized to 0-100:
+The Cognitive Load Index (CLI) is calculated from 6 weighted factors with adaptive learning:
 
 ```
-Score = Σ (factor × weight) / Σ weights × 100
+CLI(t) = α·TaskLoad + β·SwitchPenalty + γ·ReviewLoad + δ·UrgencyStress + ε·FatigueIndex + ζ·Staleness
 
-Factors:
-  taskLoad       (w=0.25) — open issues × complexity + open PRs × complexity
-  switchPenalty   (w=0.20) — context switches today × 23min recovery cost
-  reviewLoad     (w=0.15) — pending PR reviews × (additions + deletions)
-  urgencyStress  (w=0.15) — high-priority issues / total issues ratio
-  fatigueIndex   (w=0.15) — hours since first focus session today
-  staleness      (w=0.10) — issues untouched >7 days / total issues
+Base weights: α=0.25, β=0.20, γ=0.15, δ=0.15, ε=0.15, ζ=0.10
+Adaptive:     w_adaptive(k) = w_base(k) × (1 + 0.25 × I(k == dominant_factor))
+Blending:     CLI_blended = 0.7 × CLI_raw + 0.3 × CLI_historical (half-life = 3 days)
+Anomaly:      z = (CLI(t) - μ_recent) / σ_recent → mild(>1.2), moderate(>1.8), severe(>2.5)
 ```
 
-Levels: **Flow** (0-40) | **Moderate** (40-70) | **Overloaded** (70-100)
+Levels: **Flow** (0-30) | **Moderate** (30-60) | **Overloaded** (60-100)
+
+### Research Metrics (7 Formulas)
+
+1. **Cognitive Load Index (CLI)** — Weighted 6-factor composite score
+2. **Adaptive Weight Learning** — Personalized weights from overload pattern analysis
+3. **Historical Blending** — Exponential decay weighting (T_half = 3 days)
+4. **Anomaly Detection** — Z-score based cognitive load spike detection
+5. **Context Switch Cost** — 23.25min refocus time per switch (Mark et al., 2008)
+6. **Burnout Risk Prediction** — 3-factor composite: load + switches + focus deficit
+7. **Productivity Gain** — Time saved from interrupt guarding + focus protection
 
 ---
 
@@ -183,6 +193,7 @@ Open [http://localhost:3000](http://localhost:3000).
 | POST | `/api/ai/briefing` | Yes | Generate AI context briefing for a task |
 | POST | `/api/agents/recommend` | Yes | Run multi-agent orchestrator |
 | PATCH | `/api/agents/recommend` | Yes | Dismiss a recommendation |
+| GET | `/api/research/data` | No | Research data export (JSON or CSV via `?format=csv`) |
 
 ---
 
@@ -208,11 +219,13 @@ src/
 │   └── ui/                 # shadcn/ui components
 ├── lib/
 │   ├── ai/
-│   │   ├── agents/         # Focus, Planning, Interrupt Guard agents
+│   │   ├── agents/         # Focus, Planning, Interrupt Guard, Agent Memory
 │   │   ├── azure-openai.ts # Azure OpenAI client
 │   │   └── briefing-generator.ts
 │   ├── auth.ts             # NextAuth config
-│   ├── cognitive-engine.ts # Scoring algorithm
+│   ├── cognitive-engine.ts # Adaptive scoring with anomaly detection
+│   ├── research-metrics.ts # 7 formal research formulas
+│   ├── api-validation.ts   # Zod validation schemas
 │   ├── github.ts           # Octokit sync
 │   ├── logger.ts           # Pino structured logging
 │   ├── prisma.ts           # DB singleton
@@ -247,14 +260,27 @@ The repo is connected to Netlify for continuous deployment. Every push to `main`
 
 ## Demo Flow (for presentations)
 
-1. **Landing Page** → Show the marketing site with scroll animations, parallax effects, and feature breakdown
-2. **Sign In** → Click "Get Started" → GitHub OAuth → Redirects to dashboard
-3. **Dashboard** → Cognitive Load Gauge (real-time score), task list, context switch timeline, agent recommendations
-4. **Tasks** → Search, filter, sort by complexity — all synced from GitHub
-5. **Focus Timer** → Start a Pomodoro session, show interruption tracking
-6. **Briefings** → Select a task → Generate AI briefing → Show structured context reload
-7. **Analytics** → 30-day cognitive trends, focus minutes, context switch patterns
-8. **Settings** → Show GitHub integration status, cognitive load weight configuration
+1. **Landing Page** → Marketing site with scroll animations, research showcase, and feature breakdown
+2. **Research** → `/research` — 33 developer comparison, 7 formulas, exportable data
+3. **Demo** → `/demo` — Browse 33 real developer dashboards without sign-up
+4. **Sign In** → Click "Get Started" → GitHub OAuth → Redirects to dashboard
+5. **Dashboard** → Hero cognitive score with anomaly alerts, task list, agent recommendations
+6. **Tasks** → Grouped by category, AI priority scoring, visual categorization
+7. **Focus Timer** → Per-session scoring, weekly insights, session analysis
+8. **Briefings** → Select a task → Generate AI briefing → Show structured context reload
+9. **Analytics** → Burnout prediction, best working hours, weekly/monthly summaries
+10. **Settings** → Show GitHub integration status, cognitive load weight configuration
+
+## Research Paper
+
+The `/research` page serves as a living companion to the paper:
+
+- **7 formal formulas** (CLI, adaptive weights, historical blending, anomaly detection, context switch cost, burnout risk, productivity gain)
+- **33 real GitHub developers** with verified public data
+- **Exportable datasets** (JSON/CSV) at `/api/research/data`
+- **Citation references** to DORA, SPACE, DevEx, NASA-TLX, Sweller CLT, Mark et al.
+
+Suitable venues: ICSE, CHI, FSE, ASE, ESEM, IEEE Software, ACM TOSEM
 
 ---
 

@@ -32,7 +32,7 @@ async function getAdaptiveWeights(userId: string) {
 
   const avgBreakdown = overloadedSnapshots.reduce(
     (acc, s) => {
-      const b = s.breakdown as CognitiveLoadBreakdown;
+      const b = s.breakdown as unknown as CognitiveLoadBreakdown;
       return {
         taskLoad: acc.taskLoad + b.taskLoad,
         switchPenalty: acc.switchPenalty + b.switchPenalty,
