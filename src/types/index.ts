@@ -7,11 +7,19 @@ export interface CognitiveLoadBreakdown {
   staleness: number;
 }
 
+export interface CognitiveAnomaly {
+  isAnomaly: boolean;
+  severity: "mild" | "moderate" | "severe";
+  delta: number;
+}
+
 export interface CognitiveScore {
   score: number;
   level: "flow" | "moderate" | "overloaded";
   breakdown: CognitiveLoadBreakdown;
   timestamp: Date;
+  anomaly?: CognitiveAnomaly;
+  trend?: "improving" | "stable" | "declining";
 }
 
 export interface AgentRecommendation {
