@@ -305,7 +305,13 @@ export function LiveAnalyticsClient({ summary: initialSummary, trackedCount, act
                           <p className="font-medium text-sm">{dev.name ?? dev.login}</p>
                           <p className="text-[10px] text-muted-foreground">
                             @{dev.login} · {dev.publicRepos} repos · {dev.followers.toLocaleString()} followers
+                            {dev.totalStars > 0 && ` · ${dev.totalStars.toLocaleString()}★`}
                           </p>
+                          {dev.languages && dev.languages.length > 0 && (
+                            <p className="text-[9px] text-muted-foreground/60 mt-0.5">
+                              {dev.languages.slice(0, 4).join(", ")}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </td>
