@@ -24,14 +24,24 @@ export function SettingsClient({
 }: SettingsClientProps) {
   const router = useRouter();
   const [syncing, setSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
 
   const handleSync = useCallback(async () => {
     setSyncing(true);
+    setSyncMessage(null);
     try {
-      await fetch("/api/github/sync", { method: "POST" });
+      const res = await fetch("/api/github/sync", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error ?? "Failed to sync GitHub data.");
+      }
       router.refresh();
+      setSyncMessage({ type: "success", text: "GitHub sync completed." });
     } catch {
-      // Handle error
+      setSyncMessage({ type: "error", text: "Sync failed. Please try again." });
     } finally {
       setSyncing(false);
     }
@@ -110,6 +120,17 @@ export function SettingsClient({
               Sync Now
             </Button>
           </div>
+          {syncMessage && (
+            <p
+              className={
+                syncMessage.type === "success"
+                  ? "text-xs text-foreground/70"
+                  : "text-xs text-destructive"
+              }
+            >
+              {syncMessage.text}
+            </p>
+          )}
         </CardContent>
       </Card>
 

@@ -34,3 +34,12 @@ export const cognitiveScoreQuerySchema = z.object({
       return isNaN(n) || n < 1 || n > 90 ? 7 : n;
     }),
 });
+
+export const focusSessionPostSchema = z.object({
+  taskType: z.string().trim().min(1).max(100).default("general"),
+  startedAt: z.string().datetime(),
+  duration: z.number().int().min(1).max(24 * 60 * 60),
+  interrupted: z.boolean().default(false),
+  interruptionCount: z.number().int().min(0).max(100).default(0),
+  notes: z.string().max(2000).optional(),
+});
