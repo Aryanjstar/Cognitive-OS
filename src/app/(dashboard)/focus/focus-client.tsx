@@ -31,7 +31,6 @@ interface Session {
 
 interface FocusClientProps {
   sessions: Session[];
-  userId: string;
 }
 
 function calculateFocusScore(session: Session): number {

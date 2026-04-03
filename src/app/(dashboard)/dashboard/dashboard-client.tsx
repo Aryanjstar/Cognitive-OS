@@ -170,16 +170,6 @@ export function DashboardClient({
           {syncMessage.text}
         </p>
       )}
-      {focusMessage && (
-        <p
-          className={cn(
-            "text-xs",
-            focusMessage.type === "success" ? "text-foreground/70" : "text-destructive"
-          )}
-        >
-          {focusMessage.text}
-        </p>
-      )}
 
       {/* HERO: Cognitive Score + Trend + Anomaly Alert */}
       <div className="grid gap-6 lg:grid-cols-5">
@@ -275,6 +265,16 @@ export function DashboardClient({
               if (result.ok) router.refresh();
             }}
           />
+          {focusMessage && (
+            <p
+              className={cn(
+                "text-xs",
+                focusMessage.type === "success" ? "text-foreground/70" : "text-destructive"
+              )}
+            >
+              {focusMessage.text}
+            </p>
+          )}
           <SwitchTimeline switches={switches} />
         </div>
       </div>

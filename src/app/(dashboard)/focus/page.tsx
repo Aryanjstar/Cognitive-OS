@@ -34,7 +34,6 @@ export default async function FocusPage() {
         interrupted: s.interrupted,
         interruptionCount: s.interruptionCount,
       }))}
-      userId={user.id}
     />
   );
 }
