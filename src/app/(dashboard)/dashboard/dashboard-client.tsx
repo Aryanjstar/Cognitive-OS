@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { CognitiveGauge } from "@/components/dashboard/cognitive-gauge";
 import { StatsCards } from "@/components/dashboard/stats-cards";
 import { TaskList } from "@/components/dashboard/task-list";
@@ -77,14 +77,33 @@ export function DashboardClient({
   recommendations,
 }: DashboardClientProps) {
   const router = useRouter();
+  const [syncing, setSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
+  const [focusMessage, setFocusMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
 
   const handleSync = useCallback(async () => {
+    setSyncing(true);
+    setSyncMessage(null);
     try {
-      await fetch("/api/github/sync", { method: "POST" });
+      const syncRes = await fetch("/api/github/sync", { method: "POST" });
+      const syncData = await syncRes.json();
+      if (!syncRes.ok) {
+        throw new Error(syncData.error ?? "Failed to sync GitHub data.");
+      }
+
       await fetch("/api/cognitive/score?refresh=true");
       router.refresh();
+      setSyncMessage({ type: "success", text: "GitHub sync completed." });
     } catch {
-      // silently fail for now
+      setSyncMessage({ type: "error", text: "Sync failed. Please try again." });
+    } finally {
+      setSyncing(false);
     }
   }, [router]);
 
@@ -135,11 +154,22 @@ export function DashboardClient({
           size="sm"
           className="gap-2"
           onClick={handleSync}
+          disabled={syncing}
         >
-          <RefreshCw size={14} />
-          Sync & Refresh
+          <RefreshCw size={14} className={syncing ? "animate-spin" : ""} />
+          {syncing ? "Syncing..." : "Sync & Refresh"}
         </Button>
       </div>
+      {syncMessage && (
+        <p
+          className={cn(
+            "text-xs",
+            syncMessage.type === "success" ? "text-foreground/70" : "text-destructive"
+          )}
+        >
+          {syncMessage.text}
+        </p>
+      )}
 
       {/* HERO: Cognitive Score + Trend + Anomaly Alert */}
       <div className="grid gap-6 lg:grid-cols-5">
@@ -225,7 +255,26 @@ export function DashboardClient({
           <TaskList tasks={tasks} />
         </div>
         <div className="space-y-6">
-          <FocusTimer />
+          <FocusTimer
+            persistSession
+            onPersistResult={(result) => {
+              setFocusMessage({
+                type: result.ok ? "success" : "error",
+                text: result.message,
+              });
+              if (result.ok) router.refresh();
+            }}
+          />
+          {focusMessage && (
+            <p
+              className={cn(
+                "text-xs",
+                focusMessage.type === "success" ? "text-foreground/70" : "text-destructive"
+              )}
+            >
+              {focusMessage.text}
+            </p>
+          )}
           <SwitchTimeline switches={switches} />
         </div>
       </div>

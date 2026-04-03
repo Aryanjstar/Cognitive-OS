@@ -47,6 +47,10 @@ export function BriefingsClient({ briefings, tasks }: BriefingsClientProps) {
   const router = useRouter();
   const [selectedTask, setSelectedTask] = useState<string>("");
   const [generating, setGenerating] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
   const [activeBriefing, setActiveBriefing] = useState<Briefing | null>(
     briefings[0] ?? null
   );
@@ -57,6 +61,7 @@ export function BriefingsClient({ briefings, tasks }: BriefingsClientProps) {
     if (!task) return;
 
     setGenerating(true);
+    setStatusMessage(null);
     try {
       const res = await fetch("/api/ai/briefing", {
         method: "POST",
@@ -66,11 +71,18 @@ export function BriefingsClient({ briefings, tasks }: BriefingsClientProps) {
           taskType: task.type,
         }),
       });
-      if (res.ok) {
-        router.refresh();
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error ?? "Failed to generate briefing.");
       }
+
+      setStatusMessage({ type: "success", text: "Briefing generated successfully." });
+      router.refresh();
     } catch {
-      // Handle error
+      setStatusMessage({
+        type: "error",
+        text: "Failed to generate briefing. Please try again.",
+      });
     } finally {
       setGenerating(false);
     }
@@ -127,6 +139,17 @@ export function BriefingsClient({ briefings, tasks }: BriefingsClientProps) {
               Generate
             </Button>
           </div>
+          {statusMessage && (
+            <p
+              className={
+                statusMessage.type === "success"
+                  ? "mt-3 text-xs text-foreground/70"
+                  : "mt-3 text-xs text-destructive"
+              }
+            >
+              {statusMessage.text}
+            </p>
+          )}
         </CardContent>
       </Card>
 

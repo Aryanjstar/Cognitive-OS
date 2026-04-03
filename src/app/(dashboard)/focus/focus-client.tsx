@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,7 +31,6 @@ interface Session {
 
 interface FocusClientProps {
   sessions: Session[];
-  userId: string;
 }
 
 function calculateFocusScore(session: Session): number {
@@ -73,9 +73,13 @@ function getFocusScoreBg(score: number): string {
 }
 
 export function FocusClient({ sessions }: FocusClientProps) {
+  const router = useRouter();
   const [isRunning, setIsRunning] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [mode, setMode] = useState<"free" | "pomodoro">("free");
+  const [sessionStart, setSessionStart] = useState<Date | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const POMODORO_MINUTES = 25;
 
   useEffect(() => {
@@ -104,10 +108,57 @@ export function FocusClient({ sessions }: FocusClientProps) {
     }
   }, [pomodoroRemaining, isRunning, mode]);
 
-  const handleStop = useCallback(() => {
-    setIsRunning(false);
-    setElapsed(0);
+  const handleStart = useCallback(() => {
+    setError(null);
+    setIsRunning(true);
+    setSessionStart((prev) => prev ?? new Date());
   }, []);
+
+  const handlePause = useCallback(() => {
+    setIsRunning(false);
+  }, []);
+
+  const handleStop = useCallback(async () => {
+    setIsRunning(false);
+
+    if (elapsed <= 0 || !sessionStart) {
+      setElapsed(0);
+      setSessionStart(null);
+      return;
+    }
+
+    setSaving(true);
+    setError(null);
+
+    try {
+      const interrupted = mode === "pomodoro" && elapsed < POMODORO_MINUTES * 60;
+      const res = await fetch("/api/focus/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          taskType: mode === "pomodoro" ? "pomodoro" : "focus",
+          startedAt: sessionStart.toISOString(),
+          duration: elapsed,
+          interrupted,
+          interruptionCount: interrupted ? 1 : 0,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Failed to save focus session.");
+        return;
+      }
+
+      setElapsed(0);
+      setSessionStart(null);
+      router.refresh();
+    } catch {
+      setError("Failed to save focus session.");
+    } finally {
+      setSaving(false);
+    }
+  }, [elapsed, mode, router, sessionStart]);
 
   const todaySessions = sessions.filter(
     (s) =>
@@ -242,19 +293,21 @@ export function FocusClient({ sessions }: FocusClientProps) {
               <div className="mt-8 flex gap-3">
                 {!isRunning ? (
                   <Button
-                    onClick={() => setIsRunning(true)}
+                    onClick={handleStart}
                     size="lg"
                     className="gap-2"
+                    disabled={saving}
                   >
                     <Play size={16} />
                     {elapsed > 0 ? "Resume" : "Start"}
                   </Button>
                 ) : (
                   <Button
-                    onClick={() => setIsRunning(false)}
+                    onClick={handlePause}
                     size="lg"
                     variant="outline"
                     className="gap-2"
+                    disabled={saving}
                   >
                     <Pause size={16} />
                     Pause
@@ -266,12 +319,18 @@ export function FocusClient({ sessions }: FocusClientProps) {
                     size="lg"
                     variant="ghost"
                     className="gap-2"
+                    disabled={saving}
                   >
                     <Square size={16} />
-                    End
+                    {saving ? "Saving..." : "End"}
                   </Button>
                 )}
               </div>
+              {error && (
+                <p className="mt-4 text-center text-xs text-destructive">
+                  {error}
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>

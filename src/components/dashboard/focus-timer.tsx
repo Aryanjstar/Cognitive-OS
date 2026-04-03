@@ -7,12 +7,20 @@ import { Play, Pause, Square } from "lucide-react";
 
 interface FocusTimerProps {
   onSessionEnd?: (duration: number) => void;
+  persistSession?: boolean;
+  onPersistResult?: (result: { ok: boolean; message: string }) => void;
 }
 
-export function FocusTimer({ onSessionEnd }: FocusTimerProps) {
+export function FocusTimer({
+  onSessionEnd,
+  persistSession = false,
+  onPersistResult,
+}: FocusTimerProps) {
   const [isRunning, setIsRunning] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [sessionStart, setSessionStart] = useState<Date | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -32,6 +40,7 @@ export function FocusTimer({ onSessionEnd }: FocusTimerProps) {
   };
 
   const handleStart = useCallback(() => {
+    setError(null);
     setIsRunning(true);
     if (!sessionStart) {
       setSessionStart(new Date());
@@ -42,14 +51,60 @@ export function FocusTimer({ onSessionEnd }: FocusTimerProps) {
     setIsRunning(false);
   }, []);
 
-  const handleStop = useCallback(() => {
+  const handleStop = useCallback(async () => {
     setIsRunning(false);
+
+    if (elapsed <= 0 || !sessionStart) {
+      setElapsed(0);
+      setSessionStart(null);
+      return;
+    }
+
     if (elapsed > 0) {
       onSessionEnd?.(elapsed);
     }
-    setElapsed(0);
-    setSessionStart(null);
-  }, [elapsed, onSessionEnd]);
+
+    if (!persistSession) {
+      setElapsed(0);
+      setSessionStart(null);
+      return;
+    }
+
+    setSaving(true);
+    setError(null);
+
+    try {
+      const res = await fetch("/api/focus/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          taskType: "dashboard-focus",
+          startedAt: sessionStart.toISOString(),
+          duration: elapsed,
+          interrupted: false,
+          interruptionCount: 0,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        const message = data.error ?? "Failed to save focus session.";
+        setError(message);
+        onPersistResult?.({ ok: false, message });
+        return;
+      }
+
+      setElapsed(0);
+      setSessionStart(null);
+      onPersistResult?.({ ok: true, message: "Focus session saved." });
+    } catch {
+      const message = "Failed to save focus session.";
+      setError(message);
+      onPersistResult?.({ ok: false, message });
+    } finally {
+      setSaving(false);
+    }
+  }, [elapsed, onPersistResult, onSessionEnd, persistSession, sessionStart]);
 
   return (
     <Card>
@@ -76,7 +131,12 @@ export function FocusTimer({ onSessionEnd }: FocusTimerProps) {
 
           <div className="mt-6 flex gap-3">
             {!isRunning ? (
-              <Button onClick={handleStart} size="sm" className="gap-2">
+              <Button
+                onClick={handleStart}
+                size="sm"
+                className="gap-2"
+                disabled={saving}
+              >
                 <Play size={14} />
                 {elapsed > 0 ? "Resume" : "Start Focus"}
               </Button>
@@ -86,6 +146,7 @@ export function FocusTimer({ onSessionEnd }: FocusTimerProps) {
                 size="sm"
                 variant="outline"
                 className="gap-2"
+                disabled={saving}
               >
                 <Pause size={14} />
                 Pause
@@ -97,12 +158,16 @@ export function FocusTimer({ onSessionEnd }: FocusTimerProps) {
                 size="sm"
                 variant="ghost"
                 className="gap-2"
+                disabled={saving}
               >
                 <Square size={14} />
-                End
+                {saving ? "Saving..." : "End"}
               </Button>
             )}
           </div>
+          {error && (
+            <p className="mt-3 text-center text-xs text-destructive">{error}</p>
+          )}
         </div>
       </CardContent>
     </Card>
