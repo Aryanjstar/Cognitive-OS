@@ -10,5 +10,9 @@ export const metadata = {
 
 export default async function ResearchPage() {
   const data = await getResearchData();
-  return <ResearchClient developers={data.developers} aggregate={data.aggregate} />;
+  const sanitizedDevs = data.developers.map((dev) => {
+    const { email: _email, ...rest } = dev;
+    return rest;
+  });
+  return <ResearchClient developers={sanitizedDevs} aggregate={data.aggregate} />;
 }

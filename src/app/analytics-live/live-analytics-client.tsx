@@ -53,7 +53,7 @@ export function LiveAnalyticsClient({ summary: initialSummary, trackedCount, act
   const handleDiscover = useCallback(async () => {
     setDiscovering(true);
     setError(null);
-    setProgress("Discovering 50+ active GitHub developers...");
+    setProgress("Discovering active GitHub developers...");
     try {
       const discoverRes = await fetchWithTimeout("/api/tracker/discover", { method: "POST" }, 180_000);
       const discoverData = await discoverRes.json();
@@ -380,7 +380,7 @@ export function LiveAnalyticsClient({ summary: initialSummary, trackedCount, act
           </div>
           <h2 className="mt-6 text-xl font-semibold">No developers tracked yet</h2>
           <p className="mt-2 text-muted-foreground">
-            Click &ldquo;Discover Developers&rdquo; to find and track 50+ active GitHub developers.
+            Click &ldquo;Discover Developers&rdquo; to find and track active GitHub developers.
             Data will auto-refresh every 6 hours.
           </p>
           <Button onClick={handleDiscover} disabled={discovering} className="mt-6 gap-2">

@@ -5,7 +5,15 @@ import { ArrowRight, Users, Clock, TrendingUp, Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
-export function ResearchSection() {
+interface ResearchSectionProps {
+  trackedCount: number;
+  avgProductivityGain: number;
+}
+
+export function ResearchSection({ trackedCount, avgProductivityGain }: ResearchSectionProps) {
+  const displayCount = trackedCount > 0 ? String(trackedCount) : "0";
+  const displayGain = avgProductivityGain > 0 ? `${avgProductivityGain}%` : "—";
+
   return (
     <section className="border-t border-border">
       <div className="mx-auto max-w-6xl px-6 py-24 md:py-32">
@@ -20,11 +28,11 @@ export function ResearchSection() {
             Backed by Research · Real-Time Tracking
           </p>
           <h2 className="mt-4 text-3xl font-bold tracking-tight md:text-4xl">
-            50+ developers tracked live.{" "}
+            {trackedCount > 0 ? `${displayCount} developers tracked live.` : "Live developer tracking."}{" "}
             <span className="text-foreground/50">Real data. Real results.</span>
           </h2>
           <p className="mx-auto mt-5 max-w-xl text-muted-foreground">
-            We track cognitive load patterns across 50+ active GitHub developers in real-time — from
+            We track cognitive load patterns across active GitHub developers in real-time — from
             framework creators to systems programmers — using 7 research-grade formulas.
             Data refreshes automatically every 6 hours.
           </p>
@@ -39,7 +47,7 @@ export function ResearchSection() {
         >
           <ResearchStat
             icon={Users}
-            value="50+"
+            value={displayCount}
             label="Developers Tracked Live"
             description="Real-time GitHub activity, auto-refreshed every 6 hours"
           />
@@ -57,9 +65,9 @@ export function ResearchSection() {
           />
           <ResearchStat
             icon={TrendingUp}
-            value="35%"
-            label="Switch Reduction"
-            description="Projected interrupt reduction with Cognitive OS"
+            value={displayGain}
+            label="Avg Productivity Gain"
+            description="Measured across tracked developers with Cognitive OS"
           />
         </motion.div>
 

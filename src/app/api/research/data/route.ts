@@ -9,17 +9,25 @@ export async function GET(request: Request) {
 
   const data = await getResearchData();
 
+  const sanitized = {
+    ...data,
+    developers: data.developers.map((dev) => {
+      const { email: _email, ...rest } = dev;
+      return rest;
+    }),
+  };
+
   if (format === "csv") {
     const headers = [
-      "name", "email", "repos", "open_issues", "open_prs", "total_stars",
+      "name", "repos", "open_issues", "open_prs", "total_stars",
       "avg_complexity", "cognitive_load_index", "burnout_risk", "flow_ratio",
       "context_switch_cost_hrs", "projected_time_savings_hrs", "productivity_gain_pct",
       "task_load", "switch_penalty", "review_load", "urgency_stress", "fatigue_index",
       "staleness", "category",
     ];
 
-    const rows = data.developers.map((d) => [
-      d.name, d.email ?? "", d.repoCount, d.openIssues, d.openPRs, d.totalStars,
+    const rows = sanitized.developers.map((d) => [
+      d.name, d.repoCount, d.openIssues, d.openPRs, d.totalStars,
       d.avgComplexity, d.cognitiveLoadIndex, d.burnoutRisk, d.flowRatio,
       d.contextSwitchCost, d.projectedTimeSavings, d.productivityGain,
       d.breakdown.taskLoad.toFixed(2), d.breakdown.switchPenalty.toFixed(2),
@@ -38,5 +46,5 @@ export async function GET(request: Request) {
     });
   }
 
-  return NextResponse.json(data);
+  return NextResponse.json(sanitized);
 }

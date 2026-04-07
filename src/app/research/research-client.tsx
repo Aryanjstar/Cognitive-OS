@@ -9,7 +9,6 @@ import {
   Download,
   Brain,
   TrendingUp,
-  Clock,
   AlertTriangle,
   BarChart3,
   Users,
@@ -20,8 +19,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { DeveloperResearchProfile, AggregateResearchStats } from "@/lib/research-metrics";
 
+type SanitizedDeveloper = Omit<DeveloperResearchProfile, "email">;
+
 interface Props {
-  developers: DeveloperResearchProfile[];
+  developers: SanitizedDeveloper[];
   aggregate: AggregateResearchStats;
 }
 
@@ -45,10 +46,10 @@ export function ResearchClient({ developers, aggregate }: Props) {
     }
   }
 
-  const SortIcon = ({ col }: { col: SortKey }) => {
+  function renderSortIcon(col: SortKey) {
     if (sortKey !== col) return null;
     return sortDir === "desc" ? <ArrowDown size={12} /> : <ArrowUp size={12} />;
-  };
+  }
 
   return (
     <div className="mx-auto max-w-7xl px-6 py-16 md:py-24">
@@ -199,22 +200,22 @@ export function ResearchClient({ developers, aggregate }: Props) {
               <tr className="border-b border-border/60 bg-foreground/2">
                 <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Developer</th>
                 <th className="cursor-pointer px-3 py-3 text-right text-xs font-medium text-muted-foreground hover:text-foreground" onClick={() => toggleSort("cognitiveLoadIndex")}>
-                  <span className="inline-flex items-center gap-1">CLI <SortIcon col="cognitiveLoadIndex" /></span>
+                  <span className="inline-flex items-center gap-1">CLI {renderSortIcon("cognitiveLoadIndex")}</span>
                 </th>
                 <th className="cursor-pointer px-3 py-3 text-right text-xs font-medium text-muted-foreground hover:text-foreground" onClick={() => toggleSort("burnoutRisk")}>
-                  <span className="inline-flex items-center gap-1">Burnout <SortIcon col="burnoutRisk" /></span>
+                  <span className="inline-flex items-center gap-1">Burnout {renderSortIcon("burnoutRisk")}</span>
                 </th>
                 <th className="cursor-pointer px-3 py-3 text-right text-xs font-medium text-muted-foreground hover:text-foreground" onClick={() => toggleSort("openIssues")}>
-                  <span className="inline-flex items-center gap-1">Issues <SortIcon col="openIssues" /></span>
+                  <span className="inline-flex items-center gap-1">Issues {renderSortIcon("openIssues")}</span>
                 </th>
                 <th className="cursor-pointer px-3 py-3 text-right text-xs font-medium text-muted-foreground hover:text-foreground" onClick={() => toggleSort("totalStars")}>
-                  <span className="inline-flex items-center gap-1">Stars <SortIcon col="totalStars" /></span>
+                  <span className="inline-flex items-center gap-1">Stars {renderSortIcon("totalStars")}</span>
                 </th>
                 <th className="cursor-pointer px-3 py-3 text-right text-xs font-medium text-muted-foreground hover:text-foreground" onClick={() => toggleSort("projectedTimeSavings")}>
-                  <span className="inline-flex items-center gap-1">Savings <SortIcon col="projectedTimeSavings" /></span>
+                  <span className="inline-flex items-center gap-1">Savings {renderSortIcon("projectedTimeSavings")}</span>
                 </th>
                 <th className="cursor-pointer px-3 py-3 text-right text-xs font-medium text-muted-foreground hover:text-foreground" onClick={() => toggleSort("productivityGain")}>
-                  <span className="inline-flex items-center gap-1">Gain <SortIcon col="productivityGain" /></span>
+                  <span className="inline-flex items-center gap-1">Gain {renderSortIcon("productivityGain")}</span>
                 </th>
                 <th className="px-3 py-3 text-right text-xs font-medium text-muted-foreground">Category</th>
               </tr>

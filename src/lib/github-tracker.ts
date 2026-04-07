@@ -12,7 +12,6 @@ import { prisma } from "@/lib/prisma";
 import { cacheGet, cacheSet } from "@/lib/redis";
 import { createChildLogger } from "@/lib/logger";
 import {
-  computeContextSwitchCost,
   computeBurnoutRisk,
   computeProductivityGain,
 } from "@/lib/research-metrics";
@@ -389,7 +388,7 @@ function aggregateEvents(
 
 // ─── Discover Active Developers ──────────────────────────────
 
-const SEED_DEVELOPERS = [
+const DEFAULT_SEED_DEVELOPERS = [
   "sindresorhus", "tj", "rauchg", "gaearon", "Rich-Harris", "yyx990803",
   "BurntSushi", "sharkdp", "mitchellh", "fatih", "developit", "addyosmani",
   "colinhacks", "dtolnay", "karpathy", "hwchase17", "cassidoo", "ThePrimeagen",
@@ -400,6 +399,14 @@ const SEED_DEVELOPERS = [
   "ai", "vercel", "oven-sh", "denoland", "nicolo-ribaudo",
   "ljharb", "sokra", "sebmarkbage", "acdlite", "gnoff",
 ];
+
+function getSeedDevelopers(): string[] {
+  const envList = process.env.SEED_DEVELOPERS;
+  if (envList) {
+    return envList.split(",").map((s) => s.trim()).filter(Boolean);
+  }
+  return DEFAULT_SEED_DEVELOPERS;
+}
 
 async function processBatch<T, R>(
   items: T[],
@@ -421,7 +428,8 @@ export async function discoverAndTrackDevelopers(): Promise<{ tracked: number; e
   let tracked = 0;
   const batchSize = GITHUB_TOKEN ? 10 : 3;
 
-  const results = await processBatch(SEED_DEVELOPERS, batchSize, async (login) => {
+  const seedDevs = getSeedDevelopers();
+  const results = await processBatch(seedDevs, batchSize, async (login) => {
     const { profile } = await fetchDeveloperActivity(octokit, login);
     await prisma.trackedDeveloper.upsert({
       where: { githubId: profile.id },
@@ -461,7 +469,7 @@ export async function discoverAndTrackDevelopers(): Promise<{ tracked: number; e
     if (r.status === "fulfilled") {
       tracked++;
     } else {
-      const login = SEED_DEVELOPERS[i];
+      const login = seedDevs[i];
       const msg = r.reason instanceof Error ? r.reason.message : String(r.reason);
       errors.push(`${login}: ${msg}`);
       log.warn({ login, err: msg }, "Failed to track developer");
