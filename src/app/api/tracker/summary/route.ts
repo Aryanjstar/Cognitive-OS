@@ -25,5 +25,20 @@ export async function GET() {
       .catch((e) => log.error({ err: String(e) }, "Background refresh failed"));
   }
 
-  return NextResponse.json(summary);
+  return NextResponse.json({
+    ...summary,
+    _meta: {
+      source: "GitHub API → DB cache → this response",
+      githubApis: [
+        "GET https://api.github.com/users/{login}",
+        "GET https://api.github.com/users/{login}/events/public?per_page=100",
+        "GET https://api.github.com/users/{login}/repos?sort=pushed&per_page=100&type=owner",
+      ],
+      liveEndpoint: "/api/github/live?login={login}",
+      refreshEndpoint: "POST /api/tracker/refresh",
+      lastRefreshed: summary.lastRefreshed,
+      dataAgeHours: Math.round((Date.now() - new Date(summary.lastRefreshed).getTime()) / 3600000),
+      autoRefreshThresholdHours: 6,
+    },
+  });
 }

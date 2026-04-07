@@ -46,5 +46,23 @@ export async function GET(request: Request) {
     });
   }
 
-  return NextResponse.json(sanitized);
+  return NextResponse.json({
+    ...sanitized,
+    _meta: {
+      source: "GitHub API → /api/github/sync → DB → computed metrics → this response",
+      githubApis: [
+        "GET https://api.github.com/users/{login}",
+        "GET https://api.github.com/users/{login}/events/public?per_page=100",
+        "GET https://api.github.com/users/{login}/repos?sort=pushed&per_page=100&type=owner",
+      ],
+      liveEndpoint: "/api/github/live?login={username}",
+      syncEndpoint: "POST /api/github/sync",
+      computedMetrics: [
+        "Cognitive Load Index (CLI) — weighted sum of 6 sub-factors",
+        "Burnout Risk — 0.4×load + 0.3×switches + 0.3×(1-focus)",
+        "Context Switch Cost — switches/day × 23.25min refocus time",
+        "Productivity Gain — interrupt reduction + focus improvement",
+      ],
+    },
+  });
 }

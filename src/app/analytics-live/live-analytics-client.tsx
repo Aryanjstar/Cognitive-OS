@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import {
   RefreshCw, Users, Clock, TrendingUp, Brain, Mail,
   ArrowDown, ArrowUp, Activity, Zap, GitPullRequest,
-  GitCommit, Eye, Loader2,
+  GitCommit, Eye, Loader2, ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -122,6 +122,23 @@ export function LiveAnalyticsClient({ summary: initialSummary }: Props) {
     const res = await fetch(`/api/tracker/email?login=${login}`);
     const data = await res.json();
     if (!data.error) setEmailPreview(data);
+  }, []);
+
+  const [liveData, setLiveData] = useState<Record<string, unknown> | null>(null);
+  const [liveLoading, setLiveLoading] = useState<string | null>(null);
+
+  const handleViewLive = useCallback(async (login: string) => {
+    setLiveLoading(login);
+    setLiveData(null);
+    try {
+      const res = await fetch(`/api/github/live?login=${login}`);
+      const data = await res.json();
+      setLiveData(data);
+    } catch {
+      setLiveData({ error: "Failed to fetch live GitHub data" });
+    } finally {
+      setLiveLoading(null);
+    }
   }, []);
 
   function toggleSort(key: SortKey) {
@@ -358,15 +375,27 @@ export function LiveAnalyticsClient({ summary: initialSummary }: Props) {
                       {dev.timeSavings.hoursPerMonth}h/mo
                     </td>
                     <td className="px-3 py-3 text-right">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-7 gap-1 text-xs"
-                        onClick={() => handleEmailPreview(dev.login)}
-                      >
-                        <Mail size={11} />
-                        Email
-                      </Button>
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 gap-1 text-xs"
+                          onClick={() => handleViewLive(dev.login)}
+                          disabled={liveLoading === dev.login}
+                        >
+                          {liveLoading === dev.login ? <Loader2 size={11} className="animate-spin" /> : <ExternalLink size={11} />}
+                          Live
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 gap-1 text-xs"
+                          onClick={() => handleEmailPreview(dev.login)}
+                        >
+                          <Mail size={11} />
+                          Email
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -439,6 +468,55 @@ export function LiveAnalyticsClient({ summary: initialSummary }: Props) {
               <p className="text-xs text-muted-foreground">Body:</p>
               <pre className="mt-2 whitespace-pre-wrap text-xs leading-relaxed text-foreground/80 font-sans">
                 {emailPreview.body}
+              </pre>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+
+      {/* Live GitHub Data Modal */}
+      {liveData && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-6"
+          onClick={() => setLiveData(null)}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="max-h-[80vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-border bg-background p-8 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold">Live GitHub API Response</h3>
+              <Button size="sm" variant="ghost" onClick={() => setLiveData(null)}>Close</Button>
+            </div>
+            {(() => {
+              const sources = (liveData as Record<string, unknown>)?._sources;
+              if (!sources || typeof sources !== "object") return null;
+              const entries = Object.entries(sources as Record<string, unknown>).filter(
+                ([, v]) => typeof v === "object" && v !== null && "api" in (v as Record<string, unknown>)
+              );
+              if (entries.length === 0) return null;
+              return (
+                <div className="mt-4 space-y-2">
+                  {entries.map(([key, val]) => {
+                    const src = val as Record<string, unknown>;
+                    return (
+                      <div key={key} className="flex items-center gap-2 rounded-lg bg-foreground/2 px-3 py-2">
+                        <Badge variant="outline" className="text-[10px]">{String(src.status)}</Badge>
+                        <code className="text-[11px] text-foreground/70 break-all">{String(src.api)}</code>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+            <div className="mt-4 rounded-lg bg-foreground/2 p-4">
+              <p className="text-xs text-muted-foreground mb-2">Raw JSON response (check DevTools Network tab for the actual request):</p>
+              <pre className="whitespace-pre-wrap text-[11px] leading-relaxed text-foreground/80 font-mono max-h-[50vh] overflow-auto">
+                {JSON.stringify(liveData, null, 2)}
               </pre>
             </div>
           </motion.div>
