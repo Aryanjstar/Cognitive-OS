@@ -8,11 +8,13 @@ import Link from "next/link";
 interface ResearchSectionProps {
   trackedCount: number;
   avgProductivityGain: number;
+  avgTimeSavings: number;
 }
 
-export function ResearchSection({ trackedCount, avgProductivityGain }: ResearchSectionProps) {
+export function ResearchSection({ trackedCount, avgProductivityGain, avgTimeSavings }: ResearchSectionProps) {
   const displayCount = trackedCount > 0 ? String(trackedCount) : "0";
   const displayGain = avgProductivityGain > 0 ? `${avgProductivityGain}%` : "—";
+  const displaySavings = avgTimeSavings > 0 ? `${avgTimeSavings}h/mo` : "—";
 
   return (
     <section className="border-t border-border">
@@ -65,9 +67,9 @@ export function ResearchSection({ trackedCount, avgProductivityGain }: ResearchS
           />
           <ResearchStat
             icon={TrendingUp}
-            value={displayGain}
-            label="Avg Productivity Gain"
-            description="Measured across tracked developers with Cognitive OS"
+            value={displaySavings}
+            label="Avg Time Savings"
+            description={`${displayGain} productivity gain per developer with Cognitive OS`}
           />
         </motion.div>
 

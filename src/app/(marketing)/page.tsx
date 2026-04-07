@@ -8,16 +8,12 @@ import { ResearchSection } from "@/components/landing/research-section";
 import { PricingSection } from "@/components/landing/pricing-section";
 import { GuideSection } from "@/components/landing/guide-section";
 import { CTASection } from "@/components/landing/cta-section";
-import { prisma } from "@/lib/prisma";
+import { getTrackerSummary } from "@/lib/github-tracker";
 
 export default async function HomePage() {
-  const [trackedCount, avgProductivityGain] = await Promise.all([
-    prisma.trackedDeveloper.count({ where: { isActive: true } }).catch(() => 0),
-    prisma.activitySnapshot
-      .aggregate({ _avg: { burnoutRisk: true }, where: { period: "month" } })
-      .then((r) => Math.round((r._avg.burnoutRisk ?? 0) * 100) / 100)
-      .catch(() => 0),
-  ]);
+  const summary = await getTrackerSummary().catch(() => null);
+  const trackedCount = summary?.totalTracked ?? 0;
+  const avgProductivityGain = summary?.avgProductivityGain ?? 0;
 
   return (
     <>
@@ -28,6 +24,7 @@ export default async function HomePage() {
       <ResearchSection
         trackedCount={trackedCount}
         avgProductivityGain={avgProductivityGain}
+        avgTimeSavings={summary?.avgTimeSavingsPerMonth ?? 0}
       />
       <PricingSection />
       <GuideSection />
