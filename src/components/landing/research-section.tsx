@@ -1,18 +1,29 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, Users, Clock, TrendingUp, Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
-interface ResearchSectionProps {
-  trackedCount: number;
-  avgProductivityGain: number;
-  avgTimeSavings: number;
-}
+export function ResearchSection() {
+  const [trackedCount, setTrackedCount] = useState(0);
+  const [avgProductivityGain, setAvgProductivityGain] = useState(0);
+  const [avgTimeSavings, setAvgTimeSavings] = useState(0);
 
-export function ResearchSection({ trackedCount, avgProductivityGain, avgTimeSavings }: ResearchSectionProps) {
-  const displayCount = trackedCount > 0 ? String(trackedCount) : "0";
+  useEffect(() => {
+    fetch("/api/tracker/summary")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!data) return;
+        setTrackedCount(data.totalTracked ?? 0);
+        setAvgProductivityGain(data.avgProductivityGain ?? 0);
+        setAvgTimeSavings(data.avgTimeSavingsPerMonth ?? 0);
+      })
+      .catch(() => {});
+  }, []);
+
+  const displayCount = trackedCount > 0 ? String(trackedCount) : "—";
   const displayGain = avgProductivityGain > 0 ? `${avgProductivityGain}%` : "—";
   const displaySavings = avgTimeSavings > 0 ? `${avgTimeSavings}h/mo` : "—";
 

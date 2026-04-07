@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import {
@@ -14,6 +14,7 @@ import {
   Users,
   Zap,
   BookOpen,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,14 +24,29 @@ type SanitizedDeveloper = Omit<DeveloperResearchProfile, "email">;
 
 interface Props {
   developers: SanitizedDeveloper[];
-  aggregate: AggregateResearchStats;
+  aggregate: AggregateResearchStats | null;
 }
 
 type SortKey = "cognitiveLoadIndex" | "burnoutRisk" | "projectedTimeSavings" | "productivityGain" | "openIssues" | "totalStars";
 
-export function ResearchClient({ developers, aggregate }: Props) {
+export function ResearchClient({ developers: initialDevs, aggregate: initialAgg }: Props) {
+  const [developers, setDevelopers] = useState(initialDevs);
+  const [aggregate, setAggregate] = useState(initialAgg);
+  const [loading, setLoading] = useState(!initialAgg);
   const [sortKey, setSortKey] = useState<SortKey>("cognitiveLoadIndex");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+
+  useEffect(() => {
+    setLoading(true);
+    fetch("/api/research/data")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.developers) setDevelopers(data.developers);
+        if (data.aggregate) setAggregate(data.aggregate);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
 
   const sorted = [...developers].sort((a, b) => {
     const diff = (a[sortKey] as number) - (b[sortKey] as number);
@@ -49,6 +65,26 @@ export function ResearchClient({ developers, aggregate }: Props) {
   function renderSortIcon(col: SortKey) {
     if (sortKey !== col) return null;
     return sortDir === "desc" ? <ArrowDown size={12} /> : <ArrowUp size={12} />;
+  }
+
+  if (loading) {
+    return (
+      <div className="mx-auto flex max-w-7xl flex-col items-center justify-center px-6 py-32">
+        <Loader2 size={32} className="animate-spin text-foreground/40" />
+        <h2 className="mt-6 text-xl font-semibold">Fetching research data from GitHub...</h2>
+        <p className="mt-2 text-muted-foreground">Calling /api/research/data — check Network tab in DevTools</p>
+      </div>
+    );
+  }
+
+  if (!aggregate || developers.length === 0) {
+    return (
+      <div className="mx-auto flex max-w-7xl flex-col items-center justify-center px-6 py-32">
+        <Brain size={32} className="text-foreground/40" />
+        <h2 className="mt-6 text-xl font-semibold">No research data available</h2>
+        <p className="mt-2 text-muted-foreground">Run the tracker discovery first to generate research data.</p>
+      </div>
+    );
   }
 
   return (

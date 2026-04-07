@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import {
@@ -14,16 +14,16 @@ import type { TrackerSummary, DeveloperActivity } from "@/lib/github-tracker";
 
 interface Props {
   summary: TrackerSummary | null;
-  trackedCount: number;
-  activeCount: number;
+  trackedCount?: number;
+  activeCount?: number;
 }
 
 type SortKey = "commits" | "timeSavings" | "cognitiveLoad" | "activeDays" | "prsReviewed" | "followers";
 type PeriodKey = "day" | "week" | "month" | "year";
 
-export function LiveAnalyticsClient({ summary: initialSummary, trackedCount, activeCount }: Props) {
+export function LiveAnalyticsClient({ summary: initialSummary }: Props) {
   const [summary, setSummary] = useState(initialSummary);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(!initialSummary);
   const [discovering, setDiscovering] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey>("timeSavings");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
@@ -49,6 +49,13 @@ export function LiveAnalyticsClient({ summary: initialSummary, trackedCount, act
     if (!data.error) setSummary(data);
     return data;
   }, [fetchWithTimeout]);
+
+  useEffect(() => {
+    setLoading(true);
+    loadSummary()
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [loadSummary]);
 
   const handleDiscover = useCallback(async () => {
     setDiscovering(true);
@@ -172,8 +179,10 @@ export function LiveAnalyticsClient({ summary: initialSummary, trackedCount, act
               Research Tracker
             </h1>
             <p className="mt-2 text-muted-foreground">
-              {trackedCount > 0
-                ? `Tracking ${trackedCount} developers · ${activeCount} with data · Auto-refreshes every 6 hours`
+              {summary
+                ? `Tracking ${summary.totalTracked} developers · ${summary.totalActive} with data · Auto-refreshes every 6 hours`
+                : loading
+                ? "Loading developer data from GitHub..."
                 : "Click 'Discover' to build the research dataset from active GitHub developers"}
             </p>
           </div>
@@ -367,8 +376,22 @@ export function LiveAnalyticsClient({ summary: initialSummary, trackedCount, act
         </motion.div>
       )}
 
+      {/* Loading State */}
+      {loading && !summary && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="mt-20 text-center"
+        >
+          <Loader2 size={32} className="mx-auto animate-spin text-foreground/40" />
+          <h2 className="mt-6 text-xl font-semibold">Fetching live data from GitHub...</h2>
+          <p className="mt-2 text-muted-foreground">Calling /api/tracker/summary — check Network tab in DevTools</p>
+        </motion.div>
+      )}
+
       {/* Empty State */}
-      {(!summary || sorted.length === 0) && (
+      {!loading && (!summary || sorted.length === 0) && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
