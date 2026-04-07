@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Area,
   AreaChart,
@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import {
   AlertTriangle,
   Clock,
+  Loader2,
   TrendingDown,
   TrendingUp,
   Minus,
@@ -266,6 +267,25 @@ export function AnalyticsClient({
   focusSessions,
   switches,
 }: AnalyticsClientProps) {
+  const [snapshotData, setSnapshotData] = useState(snapshots);
+  const [dailyList, setDailyList] = useState(dailyData);
+  const [focusList, setFocusList] = useState(focusSessions);
+  const [switchData, setSwitchData] = useState(switches);
+  const [loading, setLoading] = useState(snapshots.length === 0);
+
+  useEffect(() => {
+    fetch("/api/analytics/data")
+      .then(r => r.json())
+      .then(d => {
+        if (d.snapshots) setSnapshotData(d.snapshots);
+        if (d.dailyData) setDailyList(d.dailyData);
+        if (d.focusSessions) setFocusList(d.focusSessions);
+        if (d.switches) setSwitchData(d.switches);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
   const [timeRange, setTimeRange] = useState<TimeRange>("30d");
 
   const rangeDays = timeRange === "7d" ? 7 : 30;
@@ -279,7 +299,7 @@ export function AnalyticsClient({
   const loadByDay = useMemo(() => {
     return days.map((day) => {
       const dayStr = format(day, "yyyy-MM-dd");
-      const daySnapshots = snapshots.filter(
+      const daySnapshots = snapshotData.filter(
         (s) => format(new Date(s.timestamp), "yyyy-MM-dd") === dayStr
       );
       const avg =
@@ -289,13 +309,13 @@ export function AnalyticsClient({
           : 0;
       return { date: format(day, "MMM d"), load: Math.round(avg) };
     });
-  }, [days, snapshots]);
+  }, [days, snapshotData]);
 
   const focusByDay = useMemo(() => {
     return days.map((day) => {
       const dayStart = startOfDay(day);
       const dayEnd = new Date(dayStart.getTime() + 86400000);
-      const daySessions = focusSessions.filter((s) => {
+      const daySessions = focusList.filter((s) => {
         const d = new Date(s.startedAt);
         return d >= dayStart && d < dayEnd;
       });
@@ -305,34 +325,42 @@ export function AnalyticsClient({
       );
       return { date: format(day, "MMM d"), minutes: totalMinutes };
     });
-  }, [days, focusSessions]);
+  }, [days, focusList]);
 
   const switchesByDay = useMemo(() => {
     return days.map((day) => {
       const dayStart = startOfDay(day);
       const dayEnd = new Date(dayStart.getTime() + 86400000);
-      const count = switches.filter((s) => {
+      const count = switchData.filter((s) => {
         const d = new Date(s.switchedAt);
         return d >= dayStart && d < dayEnd;
       }).length;
       return { date: format(day, "MMM d"), switches: count };
     });
-  }, [days, switches]);
+  }, [days, switchData]);
 
   const summary = useMemo(
-    () => computeWeeklyMonthlySummary(snapshots, focusSessions, switches, timeRange),
-    [snapshots, focusSessions, switches, timeRange]
+    () => computeWeeklyMonthlySummary(snapshotData, focusList, switchData, timeRange),
+    [snapshotData, focusList, switchData, timeRange]
   );
 
   const burnout = useMemo(
-    () => computeBurnoutRisk(snapshots, focusSessions, switches),
-    [snapshots, focusSessions, switches]
+    () => computeBurnoutRisk(snapshotData, focusList, switchData),
+    [snapshotData, focusList, switchData]
   );
 
   const bestHours = useMemo(
-    () => computeBestWorkingHours(focusSessions),
-    [focusSessions]
+    () => computeBestWorkingHours(focusList),
+    [focusList]
   );
+
+  if (loading) {
+    return (
+      <div className="flex h-[60vh] items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

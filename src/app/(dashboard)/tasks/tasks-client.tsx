@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,7 @@ import {
   Clock,
   ChevronDown,
   ChevronRight,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -114,6 +115,18 @@ interface TasksClientProps {
 }
 
 export function TasksClient({ tasks, repos }: TasksClientProps) {
+  const [taskList, setTaskList] = useState(tasks);
+  const [repoList, setRepoList] = useState(repos);
+  const [loading, setLoading] = useState(tasks.length === 0);
+
+  useEffect(() => {
+    fetch("/api/tasks")
+      .then(r => r.json())
+      .then(d => { if (d.tasks) setTaskList(d.tasks); if (d.repos) setRepoList(d.repos); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
   const [search, setSearch] = useState("");
   const [stateFilter, setStateFilter] = useState<string>("all");
   const [repoFilter, setRepoFilter] = useState<string>("all");
@@ -132,7 +145,7 @@ export function TasksClient({ tasks, repos }: TasksClientProps) {
   };
 
   const filtered = useMemo(() => {
-    let result = tasks;
+    let result = taskList;
 
     if (search) {
       const q = search.toLowerCase();
@@ -174,7 +187,7 @@ export function TasksClient({ tasks, repos }: TasksClientProps) {
     });
 
     return result;
-  }, [tasks, search, stateFilter, repoFilter, sortBy]);
+  }, [taskList, search, stateFilter, repoFilter, sortBy]);
 
   const grouped = useMemo(() => {
     const groups: Record<TaskCategory, Task[]> = {
@@ -193,6 +206,14 @@ export function TasksClient({ tasks, repos }: TasksClientProps) {
   }, [filtered]);
 
   const categoryOrder: TaskCategory[] = ["deep", "review", "shallow", "blocked"];
+
+  if (loading) {
+    return (
+      <div className="flex h-[60vh] items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -232,7 +253,7 @@ export function TasksClient({ tasks, repos }: TasksClientProps) {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Repos</SelectItem>
-            {repos.map((r) => (
+            {repoList.map((r) => (
               <SelectItem key={r.id} value={r.id}>
                 {r.name}
               </SelectItem>
@@ -387,7 +408,7 @@ export function TasksClient({ tasks, repos }: TasksClientProps) {
       </div>
 
       <p className="text-right text-xs text-muted-foreground">
-        Showing {filtered.length} of {tasks.length} tasks
+        Showing {filtered.length} of {taskList.length} tasks
       </p>
     </div>
   );

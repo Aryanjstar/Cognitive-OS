@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -6,6 +8,53 @@ import { focusSessionPostSchema } from "@/lib/api-validation";
 import { createChildLogger, logError } from "@/lib/logger";
 
 const log = createChildLogger("api:focus:session");
+
+export async function GET() {
+  const start = Date.now();
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const userId = session.user.id;
+    const rows = await prisma.focusSession.findMany({
+      where: { userId },
+      orderBy: { startedAt: "desc" },
+      take: 50,
+    });
+
+    const sessions = rows.map((s) => ({
+      id: s.id,
+      taskType: s.taskType,
+      startedAt: s.startedAt.toISOString(),
+      endedAt: s.endedAt?.toISOString() ?? null,
+      duration: s.duration,
+      interrupted: s.interrupted,
+      interruptionCount: s.interruptionCount,
+    }));
+
+    const durationMs = Date.now() - start;
+    log.info(
+      { userId, count: sessions.length, durationMs },
+      "Focus sessions listed"
+    );
+
+    return NextResponse.json({
+      sessions,
+      _meta: {
+        source: "Prisma focusSession → GET /api/focus/session",
+        count: sessions.length,
+      },
+    });
+  } catch (error) {
+    logError("api:focus:session", error, { route: "GET /api/focus/session" });
+    return NextResponse.json(
+      { error: "Failed to list focus sessions" },
+      { status: 500 }
+    );
+  }
+}
 
 export async function POST(request: Request) {
   const start = Date.now();

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -45,6 +45,9 @@ interface BriefingsClientProps {
 
 export function BriefingsClient({ briefings, tasks }: BriefingsClientProps) {
   const router = useRouter();
+  const [briefingList, setBriefingList] = useState(briefings);
+  const [taskList, setTaskList] = useState(tasks);
+  const [loading, setLoading] = useState(true);
   const [selectedTask, setSelectedTask] = useState<string>("");
   const [generating, setGenerating] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{
@@ -52,12 +55,23 @@ export function BriefingsClient({ briefings, tasks }: BriefingsClientProps) {
     text: string;
   } | null>(null);
   const [activeBriefing, setActiveBriefing] = useState<Briefing | null>(
-    briefings[0] ?? null
+    briefingList[0] ?? null
   );
+
+  useEffect(() => {
+    fetch("/api/briefings/data")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.briefings) setBriefingList(d.briefings);
+        if (d.tasks) setTaskList(d.tasks);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
 
   const handleGenerate = useCallback(async () => {
     if (!selectedTask) return;
-    const task = tasks.find((t) => t.id === selectedTask);
+    const task = taskList.find((t) => t.id === selectedTask);
     if (!task) return;
 
     setGenerating(true);
@@ -86,7 +100,15 @@ export function BriefingsClient({ briefings, tasks }: BriefingsClientProps) {
     } finally {
       setGenerating(false);
     }
-  }, [selectedTask, tasks, router]);
+  }, [selectedTask, taskList, router]);
+
+  if (loading) {
+    return (
+      <div className="flex h-[60vh] items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -111,7 +133,7 @@ export function BriefingsClient({ briefings, tasks }: BriefingsClientProps) {
                   <SelectValue placeholder="Select a task to brief on..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {tasks.map((t) => (
+                  {taskList.map((t) => (
                     <SelectItem key={t.id} value={t.id}>
                       <span className="flex items-center gap-2">
                         {t.type === "pr" ? (
@@ -156,16 +178,16 @@ export function BriefingsClient({ briefings, tasks }: BriefingsClientProps) {
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-2">
           <h3 className="text-sm font-medium text-muted-foreground px-1">
-            History ({briefings.length})
+            History ({briefingList.length})
           </h3>
-          {briefings.length === 0 ? (
+          {briefingList.length === 0 ? (
             <Card>
               <CardContent className="p-6 text-center text-sm text-muted-foreground">
                 No briefings yet. Select a task and generate your first one.
               </CardContent>
             </Card>
           ) : (
-            briefings.map((b) => (
+            briefingList.map((b) => (
               <button
                 key={b.id}
                 onClick={() => setActiveBriefing(b)}

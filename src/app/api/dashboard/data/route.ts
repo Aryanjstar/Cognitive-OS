@@ -1,0 +1,246 @@
+export const dynamic = "force-dynamic";
+
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { createChildLogger, logError } from "@/lib/logger";
+import { prisma } from "@/lib/prisma";
+
+const log = createChildLogger("api:dashboard:data");
+
+interface SnapshotSelect {
+  score: number;
+  timestamp: Date;
+}
+
+interface IssueWithRepo {
+  id: string;
+  title: string;
+  number: number;
+  complexity: number;
+  state: string;
+  repository: { name: string };
+}
+
+interface PRWithRepo {
+  id: string;
+  title: string;
+  number: number;
+  complexity: number;
+  state: string;
+  repository: { name: string };
+}
+
+interface SwitchRecord {
+  id: string;
+  fromTaskType: string | null;
+  toTaskType: string | null;
+  switchedAt: Date;
+  estimatedCost: number;
+}
+
+interface FocusRecord {
+  duration: number;
+}
+
+interface RecommendationRecord {
+  id: string;
+  agent: string;
+  type: string;
+  message: string;
+  priority: string;
+  estimatedCostMinutes: number | null;
+  dismissed: boolean;
+}
+
+export async function GET(request: Request) {
+  const start = Date.now();
+  const path = new URL(request.url).pathname;
+
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      const durationMs = Date.now() - start;
+      log.warn({ path, durationMs }, "GET dashboard data unauthorized");
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const userId = session.user.id;
+    log.debug({ userId, path }, "GET dashboard data started");
+
+    const [
+      latestSnapshot,
+      recentSnapshots,
+      openIssues,
+      openPRs,
+      todaySwitches,
+      todayFocus,
+      recommendations,
+      dailyAnalytics,
+    ] = await Promise.all([
+      prisma.cognitiveSnapshot.findFirst({
+        where: { userId },
+        orderBy: { timestamp: "desc" },
+      }),
+      prisma.cognitiveSnapshot.findMany({
+        where: {
+          userId,
+          timestamp: {
+            gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+          },
+        },
+        orderBy: { timestamp: "asc" },
+        select: { score: true, timestamp: true },
+      }),
+      prisma.issue.findMany({
+        where: { userId, state: "open" },
+        include: { repository: { select: { name: true } } },
+        orderBy: { complexity: "desc" },
+        take: 10,
+      }),
+      prisma.pullRequest.findMany({
+        where: { userId, state: "open" },
+        include: { repository: { select: { name: true } } },
+        orderBy: { complexity: "desc" },
+        take: 10,
+      }),
+      prisma.contextSwitch.findMany({
+        where: {
+          userId,
+          switchedAt: {
+            gte: new Date(new Date().setHours(0, 0, 0, 0)),
+          },
+        },
+        orderBy: { switchedAt: "desc" },
+      }),
+      prisma.focusSession.findMany({
+        where: {
+          userId,
+          startedAt: {
+            gte: new Date(new Date().setHours(0, 0, 0, 0)),
+          },
+        },
+      }),
+      prisma.agentRecommendation.findMany({
+        where: { userId, dismissed: false },
+        orderBy: { createdAt: "desc" },
+        take: 5,
+      }),
+      prisma.dailyAnalytics.findFirst({
+        where: {
+          userId,
+          date: new Date(new Date().toISOString().split("T")[0]),
+        },
+      }),
+    ]);
+
+    const tasks = [
+      ...openIssues.map((i: IssueWithRepo) => ({
+        id: i.id,
+        type: "issue" as const,
+        title: i.title,
+        number: i.number,
+        repo: i.repository.name,
+        complexity: i.complexity,
+        state: i.state,
+      })),
+      ...openPRs.map((pr: PRWithRepo) => ({
+        id: pr.id,
+        type: "pr" as const,
+        title: pr.title,
+        number: pr.number,
+        repo: pr.repository.name,
+        complexity: pr.complexity,
+        state: pr.state,
+      })),
+    ].sort((a, b) => b.complexity - a.complexity);
+
+    const switches = todaySwitches.map((s: SwitchRecord) => ({
+      id: s.id,
+      fromTask: s.fromTaskType,
+      toTask: s.toTaskType,
+      switchedAt: s.switchedAt.toISOString(),
+      estimatedCost: s.estimatedCost,
+    }));
+
+    const totalFocusMinutes = todayFocus.reduce(
+      (sum: number, s: FocusRecord) => sum + Math.floor(s.duration / 60),
+      0
+    );
+
+    const durationMs = Date.now() - start;
+    log.info({ userId, path, durationMs }, "GET dashboard data completed");
+
+    return NextResponse.json({
+      cognitiveScore: {
+        score: latestSnapshot?.score ?? 0,
+        level:
+          (latestSnapshot?.level as "flow" | "moderate" | "overloaded") ??
+          "flow",
+        breakdown: latestSnapshot?.breakdown as
+          | {
+              taskLoad: number;
+              switchPenalty: number;
+              reviewLoad: number;
+              urgencyStress: number;
+              fatigueIndex: number;
+              staleness: number;
+            }
+          | undefined,
+        anomaly: (latestSnapshot?.factors as Record<string, unknown>)
+          ?.anomaly as
+          | {
+              isAnomaly: boolean;
+              severity: "mild" | "moderate" | "severe";
+              delta: number;
+            }
+          | undefined,
+        trend: (latestSnapshot?.factors as Record<string, unknown>)?.trend as
+          | "improving"
+          | "stable"
+          | "declining"
+          | undefined,
+      },
+      history: recentSnapshots.map((s: SnapshotSelect) => ({
+        score: s.score,
+        timestamp: s.timestamp.toISOString(),
+      })),
+      tasks,
+      switches,
+      stats: {
+        focusMinutes: totalFocusMinutes,
+        contextSwitches: todaySwitches.length,
+        deepWorkStreak: dailyAnalytics?.deepWorkStreaks ?? 0,
+        tasksCompleted: dailyAnalytics?.tasksCompleted ?? 0,
+      },
+      recommendations: recommendations.map((r: RecommendationRecord) => ({
+        id: r.id,
+        agent: r.agent,
+        type: r.type,
+        message: r.message,
+        priority: r.priority,
+        estimatedCostMinutes: r.estimatedCostMinutes,
+        dismissed: r.dismissed,
+      })),
+      _meta: {
+        source:
+          "GitHub API → /api/github/sync → DB → computed metrics → this response",
+        dataQueries: [
+          "cognitiveSnapshots",
+          "issues",
+          "pullRequests",
+          "contextSwitches",
+          "focusSessions",
+          "agentRecommendations",
+          "dailyAnalytics",
+        ],
+      },
+    });
+  } catch (error) {
+    logError("api:dashboard:data", error, { path: "/api/dashboard/data" });
+    return NextResponse.json(
+      { error: "Failed to load dashboard data" },
+      { status: 500 }
+    );
+  }
+}

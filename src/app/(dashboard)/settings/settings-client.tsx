@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Github, RefreshCw, LogOut, Loader2 } from "lucide-react";
 
 interface SettingsClientProps {
-  user: { name: string; email: string; image: string };
+  user: { name: string; email: string; image: string } | null;
   githubConnected: boolean;
   repoCount: number;
 }
@@ -23,11 +23,29 @@ export function SettingsClient({
   repoCount,
 }: SettingsClientProps) {
   const router = useRouter();
+  const [profile, setProfile] = useState(user);
+  const [connected, setConnected] = useState(githubConnected);
+  const [repos, setRepos] = useState(repoCount);
+  const [loading, setLoading] = useState(!user);
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState<{
     type: "success" | "error";
     text: string;
   } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/user/profile")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.user) {
+          setProfile(d.user);
+          setConnected(d.githubConnected);
+          setRepos(d.repoCount);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
 
   const handleSync = useCallback(async () => {
     setSyncing(true);
@@ -47,6 +65,14 @@ export function SettingsClient({
     }
   }, [router]);
 
+  if (loading) {
+    return (
+      <div className="flex h-[60vh] items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div>
@@ -63,14 +89,14 @@ export function SettingsClient({
         <CardContent className="space-y-4">
           <div className="flex items-center gap-4">
             <Avatar className="h-16 w-16">
-              <AvatarImage src={user.image} />
+              <AvatarImage src={profile?.image} />
               <AvatarFallback className="text-lg">
-                {user.name.charAt(0).toUpperCase()}
+                {profile?.name.charAt(0).toUpperCase() ?? "?"}
               </AvatarFallback>
             </Avatar>
             <div>
-              <p className="text-lg font-semibold">{user.name}</p>
-              <p className="text-sm text-muted-foreground">{user.email}</p>
+              <p className="text-lg font-semibold">{profile?.name}</p>
+              <p className="text-sm text-muted-foreground">{profile?.email}</p>
             </div>
           </div>
         </CardContent>
@@ -87,14 +113,14 @@ export function SettingsClient({
               <div>
                 <p className="text-sm font-medium">GitHub Account</p>
                 <p className="text-xs text-muted-foreground">
-                  {githubConnected
-                    ? `Connected · ${repoCount} repos synced`
+                  {connected
+                    ? `Connected · ${repos} repos synced`
                     : "Not connected"}
                 </p>
               </div>
             </div>
-            <Badge variant={githubConnected ? "default" : "secondary"}>
-              {githubConnected ? "Connected" : "Disconnected"}
+            <Badge variant={connected ? "default" : "secondary"}>
+              {connected ? "Connected" : "Disconnected"}
             </Badge>
           </div>
           <Separator />
@@ -110,7 +136,7 @@ export function SettingsClient({
               size="sm"
               className="gap-2"
               onClick={handleSync}
-              disabled={syncing || !githubConnected}
+              disabled={syncing || !connected}
             >
               {syncing ? (
                 <Loader2 size={14} className="animate-spin" />

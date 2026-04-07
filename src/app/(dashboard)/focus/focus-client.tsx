@@ -15,6 +15,7 @@ import {
   TrendingUp,
   TrendingDown,
   Target,
+  Loader2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -74,6 +75,8 @@ function getFocusScoreBg(score: number): string {
 
 export function FocusClient({ sessions }: FocusClientProps) {
   const router = useRouter();
+  const [sessionList, setSessionList] = useState(sessions);
+  const [loading, setLoading] = useState(sessions.length === 0);
   const [isRunning, setIsRunning] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [mode, setMode] = useState<"free" | "pomodoro">("free");
@@ -107,6 +110,16 @@ export function FocusClient({ sessions }: FocusClientProps) {
       setIsRunning(false);
     }
   }, [pomodoroRemaining, isRunning, mode]);
+
+  useEffect(() => {
+    fetch("/api/focus/session")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.sessions) setSessionList(d.sessions);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
 
   const handleStart = useCallback(() => {
     setError(null);
@@ -160,7 +173,7 @@ export function FocusClient({ sessions }: FocusClientProps) {
     }
   }, [elapsed, mode, router, sessionStart]);
 
-  const todaySessions = sessions.filter(
+  const todaySessions = sessionList.filter(
     (s) =>
       new Date(s.startedAt).toDateString() === new Date().toDateString()
   );
@@ -180,7 +193,7 @@ export function FocusClient({ sessions }: FocusClientProps) {
   }, [todaySessions]);
 
   const weeklyInsights = useMemo(() => {
-    const weekSessions = sessions.filter(
+    const weekSessions = sessionList.filter(
       (s) =>
         Date.now() - new Date(s.startedAt).getTime() < 7 * 24 * 60 * 60 * 1000
     );
@@ -212,7 +225,7 @@ export function FocusClient({ sessions }: FocusClientProps) {
       bestHour: bestHour ? parseInt(bestHour[0]) : null,
       totalSessions: weekSessions.length,
     };
-  }, [sessions]);
+  }, [sessionList]);
 
   const hours = Array.from({ length: 24 }, (_, i) => i);
   const days = Array.from({ length: 7 }, (_, i) => {
@@ -222,7 +235,7 @@ export function FocusClient({ sessions }: FocusClientProps) {
   });
 
   const heatmapData = days.map((day) => {
-    const daySessions = sessions.filter(
+    const daySessions = sessionList.filter(
       (s) => new Date(s.startedAt).toDateString() === day.toDateString()
     );
     return hours.map((hour) => {
@@ -233,6 +246,14 @@ export function FocusClient({ sessions }: FocusClientProps) {
       return hourSessions.reduce((sum, s) => sum + s.duration, 0);
     });
   });
+
+  if (loading) {
+    return (
+      <div className="flex h-[60vh] items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -524,12 +545,12 @@ export function FocusClient({ sessions }: FocusClientProps) {
         </CardHeader>
         <CardContent className="p-0">
           <div className="divide-y divide-border">
-            {sessions.slice(0, 10).length === 0 ? (
+            {sessionList.slice(0, 10).length === 0 ? (
               <div className="px-6 py-8 text-center text-sm text-muted-foreground">
                 No focus sessions recorded yet. Start your first session above.
               </div>
             ) : (
-              sessions.slice(0, 10).map((s) => {
+              sessionList.slice(0, 10).map((s) => {
                 const score = calculateFocusScore(s);
                 const insight = getSessionInsight(s);
                 return (

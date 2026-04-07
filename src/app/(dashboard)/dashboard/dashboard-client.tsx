@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { CognitiveGauge } from "@/components/dashboard/cognitive-gauge";
 import { StatsCards } from "@/components/dashboard/stats-cards";
 import { TaskList } from "@/components/dashboard/task-list";
@@ -11,7 +11,7 @@ import { AgentRecommendations } from "@/components/dashboard/agent-recommendatio
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { RefreshCw, TrendingUp, TrendingDown, Minus, AlertTriangle } from "lucide-react";
+import { Loader2, RefreshCw, TrendingUp, TrendingDown, Minus, AlertTriangle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 
@@ -33,7 +33,7 @@ interface DashboardClientProps {
       delta: number;
     };
     trend?: "improving" | "stable" | "declining";
-  };
+  } | null;
   history: { score: number; timestamp: string }[];
   tasks: {
     id: string;
@@ -56,7 +56,7 @@ interface DashboardClientProps {
     contextSwitches: number;
     deepWorkStreak: number;
     tasksCompleted: number;
-  };
+  } | null;
   recommendations: {
     id: string;
     agent: string;
@@ -77,6 +77,8 @@ export function DashboardClient({
   recommendations,
 }: DashboardClientProps) {
   const router = useRouter();
+  const [data, setData] = useState({ cognitiveScore, history, tasks, switches, stats, recommendations });
+  const [loading, setLoading] = useState(!cognitiveScore);
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState<{
     type: "success" | "error";
@@ -86,6 +88,17 @@ export function DashboardClient({
     type: "success" | "error";
     text: string;
   } | null>(null);
+
+  useEffect(() => {
+    setLoading(true);
+    fetch("/api/dashboard/data")
+      .then(r => r.json())
+      .then(d => { if (!d.error) setData(d); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const { cognitiveScore: score, history: hist, tasks: taskList, switches: switchList, stats: statData, recommendations: recs } = data;
 
   const handleSync = useCallback(async () => {
     setSyncing(true);
@@ -124,23 +137,29 @@ export function DashboardClient({
   );
 
   const trendIcon =
-    cognitiveScore.trend === "improving" ? (
+    score?.trend === "improving" ? (
       <TrendingDown size={14} />
-    ) : cognitiveScore.trend === "declining" ? (
+    ) : score?.trend === "declining" ? (
       <TrendingUp size={14} />
     ) : (
       <Minus size={14} />
     );
 
   const trendLabel =
-    cognitiveScore.trend === "improving"
+    score?.trend === "improving"
       ? "Load decreasing"
-      : cognitiveScore.trend === "declining"
+      : score?.trend === "declining"
       ? "Load increasing"
       : "Stable";
 
   return (
     <div className="space-y-8">
+      {loading && !score && (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -172,79 +191,81 @@ export function DashboardClient({
       )}
 
       {/* HERO: Cognitive Score + Trend + Anomaly Alert */}
-      <div className="grid gap-6 lg:grid-cols-5">
-        <div className="lg:col-span-2">
-          <CognitiveGauge {...cognitiveScore} />
-        </div>
-        <div className="flex flex-col gap-4 lg:col-span-3">
-          {/* Anomaly Alert */}
-          {cognitiveScore.anomaly?.isAnomaly && (
-            <Card
-              className={cn(
-                "border-l-4",
-                cognitiveScore.anomaly.severity === "severe"
-                  ? "border-l-zinc-900"
-                  : cognitiveScore.anomaly.severity === "moderate"
-                  ? "border-l-zinc-600"
-                  : "border-l-zinc-400"
-              )}
-            >
-              <CardContent className="flex items-center gap-3 p-4">
-                <AlertTriangle
-                  size={18}
-                  className={cn(
-                    cognitiveScore.anomaly.severity === "severe"
-                      ? "text-zinc-900"
-                      : "text-zinc-500"
-                  )}
-                />
-                <div>
-                  <p className="text-sm font-medium">
-                    Cognitive Load Spike Detected
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Score jumped by +{cognitiveScore.anomaly.delta} points (
-                    {cognitiveScore.anomaly.severity} severity). Consider
-                    reviewing your workload.
-                  </p>
+      {score && (
+        <div className="grid gap-6 lg:grid-cols-5">
+          <div className="lg:col-span-2">
+            <CognitiveGauge {...score} />
+          </div>
+          <div className="flex flex-col gap-4 lg:col-span-3">
+            {/* Anomaly Alert */}
+            {score.anomaly?.isAnomaly && (
+              <Card
+                className={cn(
+                  "border-l-4",
+                  score.anomaly.severity === "severe"
+                    ? "border-l-zinc-900"
+                    : score.anomaly.severity === "moderate"
+                    ? "border-l-zinc-600"
+                    : "border-l-zinc-400"
+                )}
+              >
+                <CardContent className="flex items-center gap-3 p-4">
+                  <AlertTriangle
+                    size={18}
+                    className={cn(
+                      score.anomaly.severity === "severe"
+                        ? "text-zinc-900"
+                        : "text-zinc-500"
+                    )}
+                  />
+                  <div>
+                    <p className="text-sm font-medium">
+                      Cognitive Load Spike Detected
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Score jumped by +{score.anomaly.delta} points (
+                      {score.anomaly.severity} severity). Consider
+                      reviewing your workload.
+                    </p>
+                  </div>
+                  <Badge
+                    variant="secondary"
+                    className="ml-auto shrink-0 text-xs capitalize"
+                  >
+                    {score.anomaly.severity}
+                  </Badge>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Trend + Chart */}
+            <Card className="flex-1">
+              <CardContent className="p-0">
+                <div className="flex items-center gap-3 border-b border-border px-5 py-3">
+                  <span className="text-sm font-medium text-muted-foreground">
+                    Cognitive Load Trend
+                  </span>
+                  <Badge variant="outline" className="gap-1 text-xs">
+                    {trendIcon}
+                    {trendLabel}
+                  </Badge>
                 </div>
-                <Badge
-                  variant="secondary"
-                  className="ml-auto shrink-0 text-xs capitalize"
-                >
-                  {cognitiveScore.anomaly.severity}
-                </Badge>
+                <div className="p-4">
+                  <CognitiveChart data={hist} compact />
+                </div>
               </CardContent>
             </Card>
-          )}
-
-          {/* Trend + Chart */}
-          <Card className="flex-1">
-            <CardContent className="p-0">
-              <div className="flex items-center gap-3 border-b border-border px-5 py-3">
-                <span className="text-sm font-medium text-muted-foreground">
-                  Cognitive Load Trend
-                </span>
-                <Badge variant="outline" className="gap-1 text-xs">
-                  {trendIcon}
-                  {trendLabel}
-                </Badge>
-              </div>
-              <div className="p-4">
-                <CognitiveChart data={history} compact />
-              </div>
-            </CardContent>
-          </Card>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Stats row */}
-      <StatsCards {...stats} />
+      {statData && <StatsCards {...statData} />}
 
       {/* Agent Recommendations (high priority section) */}
-      {recommendations.filter((r) => !r.dismissed).length > 0 && (
+      {recs.filter((r) => !r.dismissed).length > 0 && (
         <AgentRecommendations
-          recommendations={recommendations}
+          recommendations={recs}
           onDismiss={handleDismissRecommendation}
         />
       )}
@@ -252,7 +273,7 @@ export function DashboardClient({
       {/* Tasks + Sidebar */}
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <TaskList tasks={tasks} />
+          <TaskList tasks={taskList} />
         </div>
         <div className="space-y-6">
           <FocusTimer
@@ -275,7 +296,7 @@ export function DashboardClient({
               {focusMessage.text}
             </p>
           )}
-          <SwitchTimeline switches={switches} />
+          <SwitchTimeline switches={switchList} />
         </div>
       </div>
     </div>
