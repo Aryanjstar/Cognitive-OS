@@ -64,5 +64,11 @@ export async function GET(request: Request) {
         "Productivity Gain — interrupt reduction + focus improvement",
       ],
     },
+    _github_apis: sanitized.developers.map(dev => ({
+      name: dev.name,
+      profile: `https://api.github.com/users/${dev.name}`,
+      events: `https://api.github.com/users/${dev.name}/events/public?per_page=100`,
+      repos: `https://api.github.com/users/${dev.name}/repos?sort=pushed&per_page=100&type=owner`,
+    })),
   });
 }

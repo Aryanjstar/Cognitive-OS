@@ -40,5 +40,12 @@ export async function GET() {
       dataAgeHours: Math.round((Date.now() - new Date(summary.lastRefreshed).getTime()) / 3600000),
       autoRefreshThresholdHours: 6,
     },
+    _github_apis: summary.developers.map(dev => ({
+      login: dev.login,
+      profile: `https://api.github.com/users/${dev.login}`,
+      events: `https://api.github.com/users/${dev.login}/events/public?per_page=100`,
+      repos: `https://api.github.com/users/${dev.login}/repos?sort=pushed&per_page=100&type=owner`,
+      instructions: "Copy these URLs to DevTools Console and run: fetch(url).then(r=>r.json()).then(d=>console.table(d))",
+    })),
   });
 }
